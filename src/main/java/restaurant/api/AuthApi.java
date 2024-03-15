@@ -19,12 +19,6 @@ public class AuthApi {
         return userService.signIn(signInRequest);
     }
 
-    @PostMapping("/save-user/{resId}")
-    public SignResponse saveUser(@RequestBody @Valid SignUpRequest signUpRequest,
-                                 @PathVariable Long resId){
-        return userService.saveUser(resId, signUpRequest);
-    }
-
     @PostMapping("/sign-up")
     public SimpleResponse singUp(@RequestBody @Valid SignUpRequest signUpRequest){
         return userService.signUp(signUpRequest);

@@ -17,8 +17,10 @@ public class MenuItem {
     @SequenceGenerator(name = "items_seq", allocationSize = 1)
     private Long id;
     private String name;
+    @Column(length = 2000)
     private String image;
     private BigDecimal price;
+    @Column(length = 1000)
     private String description;
     private boolean isVegetarian;
 

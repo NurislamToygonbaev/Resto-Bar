@@ -7,6 +7,8 @@ import restaurant.entities.enums.RestType;
 import java.util.ArrayList;
 import java.util.List;
 
+import static jakarta.persistence.CascadeType.*;
+
 @Entity
 @Getter @Setter
 @Builder
@@ -22,12 +24,12 @@ public class Restaurant {
     @Enumerated(EnumType.STRING)
     private RestType restType;
     private int numberOfEmployees;
-    private int service;
+    private String service;
 
-    @OneToMany
+    @OneToMany(cascade = {PERSIST, REMOVE, MERGE})
     private List<User> users;
 
-    @OneToMany
+    @OneToMany(cascade = {REMOVE, MERGE})
     private List<MenuItem> menuItems;
 
     public void addUser(User user){

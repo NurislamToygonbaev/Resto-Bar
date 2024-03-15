@@ -34,25 +34,21 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    @PostConstruct @Transactional
-    void saveAdmin() {
-        User admin = new User("Muhammed", "Toichubai uulu",
-                LocalDate.of(1997, 1, 1), "muhammed@gmail.com",
-                passwordEncoder.encode("admin123"), "+99675555352",
-                Role.ADMIN, 6);
-        userRepo.save(admin);
-
-        Restaurant restaurant = new Restaurant();
-        restaurant.addUser(admin);
-
-        restaurant.setName("TALISMAN");
-        restaurant.setLocation("Bishkek");
-        restaurant.setRestType(RestType.EUROPEAN);
-        restaurant.setService(25);
-        restaurant.setNumberOfEmployees(restaurant.getUsers().size());
-        restaurantRepo.save(restaurant);
+    @PostConstruct
+    void saveDeveloper() {
+        userRepo.save(
+                User.builder()
+                        .firstName("Muhammed")
+                        .lastName("Toichubai uulu")
+                        .phoneNumber("+996700700700")
+                        .dateOfBirth(LocalDate.of(1900,1,1))
+                        .experience(100)
+                        .email("devops@gmail.com")
+                        .password(passwordEncoder.encode("developer"))
+                        .role(Role.DEVELOPER)
+                        .build()
+        );
     }
-
     private void checkEmail(String email) {
         boolean exists = userRepo.existsByEmail(email);
         if (exists) throw new AlreadyExistsException("User with email: " + email + " already have");
@@ -74,25 +70,31 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    @Override
-    public SimpleResponse signUp(SignUpRequest signUpRequest) {
-        checkEmail(signUpRequest.email());
+    private void checkAge(SignUpRequest signUpRequest){
         if (signUpRequest.role().equals(Role.CHEF)){
             int year = signUpRequest.dateOfBirth().getYear();
             int currentYear = LocalDate.now().getYear();
             int age = currentYear - year;
-            if (age >= 45 || age <= 25){
+            if (age >= 45 || age < 25){
                 throw new BedRequestException("The age limit should be from 25 to 45");
             }
-        }
-        if (signUpRequest.role().equals(Role.WAITER)){
+            if (signUpRequest.experience() <= 2){
+                throw new BedRequestException("experience of at least 2 years");
+            }
+        }else if (signUpRequest.role().equals(Role.WAITER)){
             int year = signUpRequest.dateOfBirth().getYear();
             int currentYear = LocalDate.now().getYear();
             int age = currentYear - year;
-            if (age >= 30 || age <= 18){
+            if (age >= 30 || age < 18){
                 throw new BedRequestException("The age limit should be from 18 to 30");
             }
         }
+    }
+
+    @Override
+    public SimpleResponse signUp(SignUpRequest signUpRequest) {
+        checkEmail(signUpRequest.email());
+        checkAge(signUpRequest);
         userRepo.save(
                 User.builder()
                         .firstName(signUpRequest.firstName())
@@ -116,27 +118,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public SignResponse saveUser(Long resId, SignUpRequest signUpRequest) {
         checkEmail(signUpRequest.email());
-        if (signUpRequest.role().equals(Role.CHEF)){
-            int year = signUpRequest.dateOfBirth().getYear();
-            int currentYear = LocalDate.now().getYear();
-            int age = currentYear - year;
-            if (age >= 45 || age <= 25){
-                throw new BedRequestException("The age limit should be from 25 to 45");
-            }
-        }
-        if (signUpRequest.role().equals(Role.WAITER)){
-            int year = signUpRequest.dateOfBirth().getYear();
-            int currentYear = LocalDate.now().getYear();
-            int age = currentYear - year;
-            if (age >= 30 || age <= 18){
-                throw new BedRequestException("The age limit should be from 18 to 30");
-            }
-        }
+        checkAge(signUpRequest);
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
         User user = new User();
         user.setFirstName(signUpRequest.firstName());
         user.setLastName(signUpRequest.lastName());
         user.setDateOfBirth(signUpRequest.dateOfBirth());
+        user.setPhoneNumber(signUpRequest.phoneNumber());
         user.setEmail(signUpRequest.email());
         user.setPassword(passwordEncoder.encode(signUpRequest.password()));
         user.setExperience(signUpRequest.experience());
@@ -144,6 +132,7 @@ public class UserServiceImpl implements UserService {
 
         restaurant.addUser(user);
         userRepo.save(user);
+        restaurant.setNumberOfEmployees(restaurant.getUsers().size());
         return SignResponse.builder()
                 .token(jwtService.createToken(user))
                 .email(user.getEmail())

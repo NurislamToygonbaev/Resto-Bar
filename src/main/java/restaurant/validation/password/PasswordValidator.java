@@ -5,9 +5,7 @@ import jakarta.validation.ConstraintValidatorContext;
 
 public class PasswordValidator implements ConstraintValidator<PasswordValidation, String> {
     @Override
-    public boolean isValid(String value, ConstraintValidatorContext constraintValidatorContext) {
-
-
-        return value.length() >= 4;
+    public boolean isValid(String password, ConstraintValidatorContext constraintValidatorContext) {
+        return password.length() > 4;
     }
 }

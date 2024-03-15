@@ -2,13 +2,11 @@ package restaurant.exceptions.handler;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.client.HttpClientErrorException;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.BedRequestException;
 import restaurant.exceptions.ForbiddenException;
@@ -62,7 +60,7 @@ public class HandlerException {
     public ExceptionResponse badRequest(BedRequestException e){
         log.error(e.getMessage());
         return ExceptionResponse.builder()
-                .httpStatus(HttpStatus.FORBIDDEN)
+                .httpStatus(HttpStatus.BAD_REQUEST)
                 .exceptionClassName(e.getClass().getSimpleName())
                 .message(e.getMessage())
                 .build();

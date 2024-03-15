@@ -10,7 +10,7 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.PARAMETER, ElementType.TYPE_USE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PhoneNumberValidation {
-    String message() default "{password must be more 7 symbol}";
+    String message() default "{phone number must start with +996 and lent 13}";
 
     Class<?>[] groups() default {};
 
