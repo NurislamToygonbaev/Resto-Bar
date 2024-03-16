@@ -2,9 +2,8 @@ package restaurant.services;
 
 import restaurant.dto.request.SignInRequest;
 import restaurant.dto.request.SignUpRequest;
-import restaurant.dto.response.PaginationUser;
-import restaurant.dto.response.SignResponse;
-import restaurant.dto.response.SimpleResponse;
+import restaurant.dto.request.UpdateRequest;
+import restaurant.dto.response.*;
 
 import java.security.Principal;
 
@@ -13,9 +12,17 @@ public interface UserService {
 
     SimpleResponse signUp(Long resId, SignUpRequest signUpRequest);
 
-    SignResponse saveUser(Long resId, SignUpRequest signUpRequest, Principal principal);
+    SignResponse saveUser(SignUpRequest signUpRequest, Principal principal);
 
     PaginationUser findALlUsers(int page, int size, Principal principal);
 
-    PaginationUser findALlApps(Long restId,int page, int size, Principal principal);
+    PaginationUser findALlApps(int page, int size, Principal principal);
+
+    HttpResponseForUser update(Principal principal, UpdateRequest updateRequest);
+
+    HttpResponseForUser updateEmployees(Long userId, SignUpRequest signUpRequest, Principal principal);
+
+    AllUsersResponse findEmployee(Long userId, Principal principal);
+
+    SimpleResponse deleteEmployee(Long userId, Principal principal);
 }

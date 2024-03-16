@@ -3,6 +3,7 @@ package restaurant.exceptions.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -78,4 +79,25 @@ public class HandlerException {
     }
 
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ExceptionResponse illegalArgumentException(IllegalArgumentException e){
+        log.error(e.getMessage());
+        return ExceptionResponse.builder()
+                .httpStatus(HttpStatus.CONFLICT)
+                .exceptionClassName(e.getClass().getSimpleName())
+                .message(e.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ExceptionResponse usernameNotFoundException(UsernameNotFoundException e){
+        log.error(e.getMessage());
+        return ExceptionResponse.builder()
+                .httpStatus(HttpStatus.NOT_FOUND)
+                .exceptionClassName(e.getClass().getSimpleName())
+                .message(e.getMessage())
+                .build();
+    }
 }

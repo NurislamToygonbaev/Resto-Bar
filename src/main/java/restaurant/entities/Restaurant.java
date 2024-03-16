@@ -24,7 +24,7 @@ public class Restaurant {
     @Enumerated(EnumType.STRING)
     private RestType restType;
     private int numberOfEmployees;
-    private String service;
+    private int service;
 
     @OneToMany(cascade = {PERSIST, REMOVE, MERGE}, mappedBy = "restaurant")
     private List<User> users;

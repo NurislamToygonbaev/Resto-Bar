@@ -19,31 +19,17 @@ public class RestaurantApi {
     private final RestaurantService restaurantService;
 
     @Secured("DEVELOPER")
-    @GetMapping
-    public RestPagResponse findAll(@RequestParam int page,
-                                   @RequestParam int size){
-        return restaurantService.findAll(page, size);
-    }
-
-    @Secured("DEVELOPER")
     @PostMapping
     public SimpleResponse createRestAndAdmin(@RequestBody SaveRestaurantRequest saveRestaurantRequest,
                                              Principal principal){
         return restaurantService.save(principal, saveRestaurantRequest);
     }
 
-    @Secured("DEVELOPER")
-    @GetMapping("/find-by-id/{resId}")
-    public FindRestaurantResponse findById(@PathVariable Long resId, Principal principal){
-        return restaurantService.findById(resId, principal);
-    }
-
-    @Secured({"DEVELOPER", "ADMIN"})
-    @PutMapping("/{restId}")
-    public SimpleResponse editRestaurant(@PathVariable Long restId,
-                                         @RequestBody EditRestaurantRequest editRestaurantRequest,
+    @Secured({"ADMIN", "DEVELOPER"})
+    @PutMapping
+    public SimpleResponse editRestaurant(@RequestBody EditRestaurantRequest editRestaurantRequest,
                                          Principal principal){
-        return restaurantService.editRestaurant(restId, editRestaurantRequest, principal);
+        return restaurantService.editRestaurant(editRestaurantRequest, principal);
     }
 
     @Secured({"DEVELOPER"})

@@ -1,9 +1,11 @@
 package restaurant.repository;
 
-import org.hibernate.query.Page;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import restaurant.entities.Restaurant;
 import restaurant.entities.User;
 import restaurant.exceptions.NotFoundException;
 
@@ -29,6 +31,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email);
 
-//    @Query("select u from User u where u.restaurant.id = :restaurantId")
-//    Page<User> findAllByRestaurantId(Long restaurantId,Pageable pageable);
+    @Query("select u from User u where u.restaurant.id =:resId")
+    List<User> findAllById(Long resId);
+    default Page<User> findUserByRestaurantId(Long resId, Pageable pageable){
+        List<User> users = findAllById(resId);
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), users.size());
+        return new PageImpl<>(users.subList(start, end), pageable, users.size());
+    }
+
 }

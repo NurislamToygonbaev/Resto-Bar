@@ -11,6 +11,6 @@ public record ALlRestResponse(
         @Enumerated(EnumType.STRING)
         RestType restType,
         int numberOfEmployees,
-        String service
+        int service
 ) {
 }

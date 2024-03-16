@@ -11,15 +11,15 @@ import java.security.Principal;
 public interface RestaurantService {
     SimpleResponse save(Principal principal, SaveRestaurantRequest saveRestaurantRequest);
 
-    SimpleResponse assignUserToRes(Long resId, Long jobId, Principal principal);
+    SimpleResponse assignUserToRes(Long jobId, Principal principal);
 
-    FindRestaurantResponse findById(Long resId, Principal principal);
+    FindRestaurantResponse findById(Long resId);
 
-    SimpleResponse editRestaurant(Long restId, EditRestaurantRequest editRestaurantRequest, Principal principal);
+    SimpleResponse editRestaurant(EditRestaurantRequest editRestaurantRequest, Principal principal);
 
     SimpleResponse delete(Long resId, Principal principal);
 
-    SimpleResponse rejectionApps(Long resId, Long jobId, Principal principal);
+    SimpleResponse rejectionApps(Long jobId, Principal principal);
 
     RestPagResponse findAll(int page, int size);
 }

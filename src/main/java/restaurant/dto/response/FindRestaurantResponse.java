@@ -18,8 +18,8 @@ public record FindRestaurantResponse(
         RestType restType,
         int numberOfEmployees,
         String service,
-        User user,
-        List<MenuItem> menuItems
+        UserAminResponse userAminResponse,
+        List<MenuItemsResponse> menuItems
 
 ) {
 }

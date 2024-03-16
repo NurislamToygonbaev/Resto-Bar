@@ -10,6 +10,6 @@ public record CatResponse(
         Long id,
         String name,
         List<String> subCatName,
-        List<MenuItem> menuItems
+        List<MenuItemsResponse> menuItems
 ) {
 }

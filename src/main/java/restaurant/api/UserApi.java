@@ -4,9 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 import restaurant.dto.request.SignUpRequest;
-import restaurant.dto.response.PaginationUser;
-import restaurant.dto.response.SignResponse;
-import restaurant.dto.response.SimpleResponse;
+import restaurant.dto.request.UpdateRequest;
+import restaurant.dto.response.*;
 import restaurant.services.RestaurantService;
 import restaurant.services.UserService;
 
@@ -28,34 +27,58 @@ public class UserApi {
     }
 
     @Secured("ADMIN")
-    @PostMapping("/{resId}")
+    @PostMapping
     public SignResponse saveUser(@RequestBody SignUpRequest signUpRequest,
-                                 @PathVariable Long resId,
                                  Principal principal){
-        return userService.saveUser(resId, signUpRequest, principal);
+        return userService.saveUser(signUpRequest, principal);
     }
 
     @Secured("ADMIN")
-    @GetMapping("/apps/{resId}")
+    @GetMapping("/apps")
     public PaginationUser findAllApps(@RequestParam int page,
                                   @RequestParam int size,
-                                  Principal principal, @PathVariable Long resId){
-        return userService.findALlApps(resId, page, size, principal);
+                                  Principal principal){
+        return userService.findALlApps(page, size, principal);
     }
 
     @Secured("ADMIN")
-    @PostMapping("/assign/{resId}/{jobId}")
-    public SimpleResponse assignUserToRes(@PathVariable Long resId,
-                                          @PathVariable Long jobId,
+    @PostMapping("/assign/{jobId}")
+    public SimpleResponse assignUserToRes(@PathVariable Long jobId,
                                           Principal principal){
-        return restaurantService.assignUserToRes(resId, jobId, principal);
+        return restaurantService.assignUserToRes(jobId, principal);
     }
 
     @Secured("ADMIN")
-    @PostMapping("/rejection/{resId}/{jobId}")
+    @PostMapping("/rejection/{jobId}")
     public SimpleResponse rejectionApps(@PathVariable Long jobId,
-                                        @PathVariable Long resId,
                                         Principal principal){
-        return restaurantService.rejectionApps(resId, jobId, principal);
+        return restaurantService.rejectionApps(jobId, principal);
+    }
+
+    @PutMapping
+    public HttpResponseForUser update(Principal principal,
+                                      @RequestBody UpdateRequest updateRequest){
+        return userService.update(principal, updateRequest);
+    }
+
+    @Secured("ADMIN")
+    @PutMapping("/update/{userId}")
+    public HttpResponseForUser updateEmployees(@PathVariable Long userId,
+                                               @RequestBody SignUpRequest signUpRequest,
+                                               Principal principal){
+        return userService.updateEmployees(userId, signUpRequest, principal);
+    }
+
+    @Secured("ADMIN")
+    @GetMapping("/findEmployee/{userId}")
+    public AllUsersResponse findEmployee(@PathVariable Long userId,
+                                         Principal principal){
+        return userService.findEmployee(userId, principal);
+    }
+
+    @Secured("ADMIN")
+    @DeleteMapping("/{userId}")
+    public SimpleResponse deleteEmployee(@PathVariable Long userId, Principal principal){
+        return userService.deleteEmployee(userId, principal);
     }
 }

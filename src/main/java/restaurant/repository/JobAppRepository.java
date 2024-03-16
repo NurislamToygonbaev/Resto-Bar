@@ -20,7 +20,7 @@ public interface JobAppRepository extends JpaRepository<JobApp, Long> {
         return findJobAppById(jobId).orElseThrow(() ->
                 new NotFoundException("Not found"));
     }
-    @Query("select j from JobApp j where j.restaurant =:restId")
+    @Query("select j from JobApp j where j.restaurant.id =:restId")
     List<JobApp> findAll(Long restId);
 
     default Page<JobApp> findAllByRestaurantId(Long restId, Pageable pageable){
@@ -28,6 +28,5 @@ public interface JobAppRepository extends JpaRepository<JobApp, Long> {
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), jobApps.size());
         return new PageImpl<>(jobApps.subList(start, end), pageable, jobApps.size());
-
     }
 }

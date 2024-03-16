@@ -14,10 +14,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import restaurant.config.jwt.JwtService;
 import restaurant.dto.request.SignInRequest;
 import restaurant.dto.request.SignUpRequest;
-import restaurant.dto.response.AllUsersResponse;
-import restaurant.dto.response.PaginationUser;
-import restaurant.dto.response.SignResponse;
-import restaurant.dto.response.SimpleResponse;
+import restaurant.dto.request.UpdateRequest;
+import restaurant.dto.response.*;
 import restaurant.entities.JobApp;
 import restaurant.entities.Restaurant;
 import restaurant.entities.User;
@@ -45,6 +43,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final JobAppRepository jobAppRepo;
+    private final CurrentUserService currentUserService;
 
     @PostConstruct
     void saveDeveloper() {
@@ -104,11 +103,14 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    @Override
-    @Transactional
+    @Override @Transactional
     public SimpleResponse signUp(Long resId, SignUpRequest signUpRequest) {
         checkEmail(signUpRequest.email());
         checkAge(signUpRequest);
+        Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
+        if (restaurant.getNumberOfEmployees() > 15){
+            throw new NotFoundException("There are no vacancies");
+        }
         JobApp saveApps = jobAppRepo.save(
                 JobApp.builder()
                         .firstName(signUpRequest.firstName())
@@ -121,9 +123,9 @@ public class UserServiceImpl implements UserService {
                         .role(signUpRequest.role())
                         .build()
         );
-        Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
         restaurant.addJobApp(saveApps);
         saveApps.setRestaurant(restaurant);
+
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)
                 .message("thank you for contacting us," +
@@ -131,102 +133,185 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    @Override
-    @Transactional
-    public SignResponse saveUser(Long resId, SignUpRequest signUpRequest, Principal principal) {
+    @Override @Transactional
+    public SignResponse saveUser(SignUpRequest signUpRequest, Principal principal) {
+        User currentUser = currentUserService.returnCurrentUser(principal);
+
+        if (!currentUser.getRole().equals(Role.ADMIN)){
+            throw new ForbiddenException("Forbidden 403");
+        }
+
         checkEmail(signUpRequest.email());
         checkAge(signUpRequest);
-        String email = principal.getName();
-        User currentUser = userRepo.getByEmail(email);
+
+        Long resId = currentUser.getRestaurant().getId();
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
-        if (currentUser.getRole().equals(Role.ADMIN) && restaurant.getUsers().contains(currentUser)){
-            User user = new User();
-            user.setFirstName(signUpRequest.firstName());
-            user.setLastName(signUpRequest.lastName());
-            user.setDateOfBirth(signUpRequest.dateOfBirth());
-            user.setPhoneNumber(signUpRequest.phoneNumber());
-            user.setEmail(signUpRequest.email());
-            user.setPassword(passwordEncoder.encode(signUpRequest.password()));
-            user.setExperience(signUpRequest.experience());
-            user.setRole(signUpRequest.role());
 
-            restaurant.addUser(user);
-            user.setRestaurant(restaurant);
-            userRepo.save(user);
-            restaurant.setNumberOfEmployees(restaurant.getUsers().size());
-            return SignResponse.builder()
-                    .token(jwtService.createToken(user))
-                    .email(user.getEmail())
-                    .id(user.getId())
-                    .role(user.getRole().name())
-                    .httpStatus(HttpStatus.OK)
-                    .message("Successfully saved with name: " + user.getFirstName())
-                    .build();
-        }else throw new ForbiddenException("Forbidden 403");
+        User user = new User();
+        user.setFirstName(signUpRequest.firstName());
+        user.setLastName(signUpRequest.lastName());
+        user.setDateOfBirth(signUpRequest.dateOfBirth());
+        user.setPhoneNumber(signUpRequest.phoneNumber());
+        user.setEmail(signUpRequest.email());
+        user.setPassword(passwordEncoder.encode(signUpRequest.password()));
+        user.setExperience(signUpRequest.experience());
+        user.setRole(signUpRequest.role());
+
+        restaurant.addUser(user);
+        user.setRestaurant(restaurant);
+        userRepo.save(user);
+        restaurant.setNumberOfEmployees(restaurant.getUsers().size());
+
+        return SignResponse.builder()
+                .token(jwtService.createToken(user))
+                .email(user.getEmail())
+                .id(user.getId())
+                .role(user.getRole().name())
+                .httpStatus(HttpStatus.OK)
+                .message("Successfully saved with name: " + user.getFirstName())
+                .build();
     }
 
-    @Override
+    @Override @Transactional
     public PaginationUser findALlUsers(int page, int size, Principal principal) {
-        String email = principal.getName();
-        User user = userRepo.getByEmail(email);
+        User user = currentUserService.returnCurrentUser(principal);
+        Long resId = user.getRestaurant().getId();
+        if (!user.getRole().equals(Role.ADMIN)) {
+            throw new ForbiddenException("Forbidden 403");
+        }
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<User> users = userRepo.findUserByRestaurantId(resId,pageable);
+        List<AllUsersResponse> allUsersResponses = new ArrayList<>();
+        for (User userFound : users.getContent()) {
+            AllUsersResponse allUsersResponse = convertUser(userFound);
+            allUsersResponses.add(allUsersResponse);
+        }
+        return PaginationUser.builder()
+                .page(users.getNumber() + 1)
+                .size(users.getTotalPages())
+                .allUsersResponses(allUsersResponses)
+                .build();
+    }
 
-        if (user.getRole().equals(Role.ADMIN)) {
-            Pageable pageable = PageRequest.of(page - 1, size);
-            Page<User> users = userRepo.findAll(pageable);
-            List<AllUsersResponse> allUsersResponses = new ArrayList<>();
-            for (User userFound : users.getContent()) {
-                AllUsersResponse allUsersResponse = convertUser(userFound);
-                allUsersResponses.add(allUsersResponse);
-            }
-            return PaginationUser.builder()
-                    .page(users.getNumber() + 1)
-                    .size(users.getTotalPages())
-                    .allUsersResponses(allUsersResponses)
-                    .build();
-        }else throw new ForbiddenException("Forbidden 403");
+    @Override @Transactional
+    public PaginationUser findALlApps(int page, int size, Principal principal) {
+        User user = currentUserService.returnCurrentUser(principal);
+        Long restId = user.getRestaurant().getId();
+        if (!user.getRole().equals(Role.ADMIN)) {
+            throw new ForbiddenException("Forbidden 403");
+        }
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<JobApp> jobApps = jobAppRepo.findAllByRestaurantId(restId,pageable);
+        List<AllUsersResponse> allUsersResponses = new ArrayList<>();
+        for (JobApp userFound : jobApps.getContent()) {
+            AllUsersResponse allUsersResponse = convertApps(userFound);
+            allUsersResponses.add(allUsersResponse);
+        }
+        return PaginationUser.builder()
+                .page(jobApps.getNumber() + 1)
+                .size(jobApps.getTotalPages())
+                .allUsersResponses(allUsersResponses)
+                .build();
+    }
+
+    @Override @Transactional
+    public HttpResponseForUser update(Principal principal, UpdateRequest updateRequest) {
+        User user = currentUserService.returnCurrentUser(principal);
+        user.setLastName(updateRequest.lastName());
+        user.setFirstName(updateRequest.firstName());
+        user.setEmail(updateRequest.email());
+        user.setPassword(passwordEncoder.encode(updateRequest.password()));
+        user.setPhoneNumber(updateRequest.phoneNumber());
+        user.setExperience(updateRequest.experience());
+        user.setDateOfBirth(updateRequest.dateOfBirth());
+        userRepo.save(user);
+        return HttpResponseForUser.builder()
+                .token(jwtService.createToken(user))
+                .email(user.getEmail())
+                .role(user.getRole())
+                .simpleResponse(SimpleResponse.builder()
+                        .httpStatus(HttpStatus.OK)
+                        .message("successFully updated your profile")
+                        .build())
+                .build();
+    }
+
+    @Override @Transactional
+    public HttpResponseForUser updateEmployees(Long userId, SignUpRequest request, Principal principal) {
+        User admin = currentUserService.returnCurrentUser(principal);
+        if (!admin.getRole().equals(Role.ADMIN)){
+            throw new ForbiddenException("Forbidden 403");
+        }
+        User user = userRepo.getUserById(userId);
+
+        user.setFirstName(request.firstName());
+        user.setEmail(request.email());
+        user.setLastName(request.lastName());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setPhoneNumber(request.phoneNumber());
+        user.setExperience(request.experience());
+        user.setDateOfBirth(request.dateOfBirth());
+        user.setRole(request.role());
+        userRepo.save(user);
+
+        return HttpResponseForUser.builder()
+                .token(jwtService.createToken(user))
+                .role(user.getRole())
+                .email(user.getEmail())
+                .simpleResponse(SimpleResponse.builder()
+                        .httpStatus(HttpStatus.OK)
+                        .message("Employee with name: "+user.getFirstName()+" Successfully updated")
+                        .build())
+                .build();
     }
 
     @Override
-    public PaginationUser findALlApps(Long restId ,int page, int size, Principal principal) {
-        String email = principal.getName();
-        User user = userRepo.getByEmail(email);
-        if (user.getRole().equals(Role.ADMIN)) {
-            Pageable pageable = PageRequest.of(page - 1, size);
-            Page<JobApp> jobApps = jobAppRepo.findAllByRestaurantId(restId,pageable);
-            List<AllUsersResponse> allUsersResponses = new ArrayList<>();
-            for (JobApp userFound : jobApps.getContent()) {
-                AllUsersResponse allUsersResponse = convertApps(userFound);
-                allUsersResponses.add(allUsersResponse);
-            }
+    public AllUsersResponse findEmployee(Long userId, Principal principal) {
+        User currentUser = currentUserService.returnCurrentUser(principal);
+        if (!currentUser.getRole().equals(Role.ADMIN)){
+            throw new ForbiddenException("Forbidden 403");
+        }
 
-//            Pageable pageable = PageRequest.of(page -1 , size);
-//            Page<Product> productPage = productRepo.findAll(pageable);
-//            return PaginationResponse.builder()
-//                    .page(productPage.getNumber() + 1)
-//                    .size(productPage.getTotalPages())
-//                    .productList(productPage.getContent())
-//                    .build();
+        User user = userRepo.getUserById(userId);
 
+        return AllUsersResponse.builder()
+                .lastName(user.getLastName())
+                .firstName(user.getFirstName())
+                .email(user.getEmail())
+                .dateOfBirth(user.getDateOfBirth())
+                .experience(user.getExperience())
+                .id(user.getId())
+                .phoneNumber(user.getPhoneNumber())
+                .role(user.getRole())
+                .build();
+    }
 
-            return PaginationUser.builder()
-                    .page(jobApps.getNumber() + 1)
-                    .size(jobApps.getTotalPages())
-                    .allUsersResponses(allUsersResponses)
-                    .build();
-        }else throw new ForbiddenException("Forbidden 403");
+    @Override
+    public SimpleResponse deleteEmployee(Long userId, Principal principal) {
+        User currentUser = currentUserService.returnCurrentUser(principal);
+        if (!currentUser.getRole().equals(Role.ADMIN)){
+            throw new ForbiddenException("Forbidden 403");
+        }
+        User user = userRepo.getUserById(userId);
+
+        userRepo.delete(user);
+        return SimpleResponse.builder()
+                .httpStatus(HttpStatus.OK)
+                .message("Employee with name: "+user.getFirstName()+" Successfully deleted")
+                .build();
     }
 
     private AllUsersResponse convertUser(User user) {
         return new AllUsersResponse(
                 user.getId(), user.getLastName(), user.getFirstName(), user.getDateOfBirth(),
-                user.getEmail(), user.getPassword(), user.getPhoneNumber(), user.getRole(),
+                user.getEmail(), user.getPhoneNumber(), user.getRole(),
                 user.getExperience()
         );
     }
     private AllUsersResponse convertApps(JobApp user) {
         return new AllUsersResponse(
                 user.getId(), user.getLastName(), user.getFirstName(), user.getDateOfBirth(),
-                user.getEmail(), user.getPassword(), user.getPhoneNumber(), user.getRole(),
+                user.getEmail(), user.getPhoneNumber(), user.getRole(),
                 user.getExperience()
         );
     }

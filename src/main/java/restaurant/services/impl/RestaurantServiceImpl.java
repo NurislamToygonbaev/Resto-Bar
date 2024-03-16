@@ -10,17 +10,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import restaurant.dto.request.EditRestaurantRequest;
 import restaurant.dto.request.SaveRestaurantRequest;
-import restaurant.dto.response.ALlRestResponse;
-import restaurant.dto.response.FindRestaurantResponse;
-import restaurant.dto.response.RestPagResponse;
-import restaurant.dto.response.SimpleResponse;
+import restaurant.dto.response.*;
 import restaurant.entities.JobApp;
+import restaurant.entities.MenuItem;
 import restaurant.entities.Restaurant;
 import restaurant.entities.User;
 import restaurant.entities.enums.Role;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.BedRequestException;
 import restaurant.exceptions.ForbiddenException;
+import restaurant.exceptions.NotFoundException;
 import restaurant.repository.JobAppRepository;
 import restaurant.repository.RestaurantRepository;
 import restaurant.repository.UserRepository;
@@ -29,6 +28,7 @@ import restaurant.services.RestaurantService;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,164 +37,183 @@ public class RestaurantServiceImpl implements RestaurantService {
     private final UserRepository userRepo;
     private final PasswordEncoder passwordEncoder;
     private final JobAppRepository jobAppRepo;
+    private final CurrentUserService currentUserService;
 
-    @Override
+    @Override @Transactional
     public SimpleResponse save(Principal principal, SaveRestaurantRequest saveRestaurantRequest) {
+        User currentUser = currentUserService.returnCurrentUser(principal);
+        if (!currentUser.getRole().equals(Role.DEVELOPER)){
+            throw new ForbiddenException("Forbidden 403");
+        }
+
         boolean exists = userRepo.existsByEmail(saveRestaurantRequest.email());
-        if (exists)
+        if (exists) {
             throw new AlreadyExistsException("User with email: " + saveRestaurantRequest.email() + " already have");
+        }
 
         if (saveRestaurantRequest.service() < 1) {
             throw new BedRequestException("It cannot be negative");
         }
 
-        String email = principal.getName();
-        User currentUser = userRepo.getByEmail(email);
-        if (currentUser.getRole().equals(Role.DEVELOPER)){
-            User user = new User();
-            user.setFirstName(saveRestaurantRequest.firstName());
-            user.setLastName(saveRestaurantRequest.lastName());
-            user.setDateOfBirth(saveRestaurantRequest.dateOfBirth());
-            user.setEmail(saveRestaurantRequest.email());
-            user.setPassword(passwordEncoder.encode(saveRestaurantRequest.password()));
-            user.setPhoneNumber(saveRestaurantRequest.phoneNumber());
-            user.setExperience(saveRestaurantRequest.experience());
-            user.setRole(Role.ADMIN);
-            userRepo.save(user);
+        User user = new User();
+        user.setFirstName(saveRestaurantRequest.firstName());
+        user.setLastName(saveRestaurantRequest.lastName());
+        user.setDateOfBirth(saveRestaurantRequest.dateOfBirth());
+        user.setEmail(saveRestaurantRequest.email());
+        user.setPassword(passwordEncoder.encode(saveRestaurantRequest.password()));
+        user.setPhoneNumber(saveRestaurantRequest.phoneNumber());
+        user.setExperience(saveRestaurantRequest.experience());
+        user.setRole(Role.ADMIN);
+        userRepo.save(user);
 
-            Restaurant restaurant = new Restaurant();
-            restaurant.addUser(user);
-            user.setRestaurant(restaurant);
-            restaurant.setName(saveRestaurantRequest.name());
-            restaurant.setLocation(saveRestaurantRequest.location());
-            restaurant.setRestType(saveRestaurantRequest.restType());
-            String service = String.valueOf(saveRestaurantRequest.service());
-            restaurant.setService(service + " %");
-            restaurant.setNumberOfEmployees(restaurant.getUsers().size());
+        Restaurant restaurant = new Restaurant();
+        restaurant.addUser(user);
+        user.setRestaurant(restaurant);
+        restaurant.setName(saveRestaurantRequest.name());
+        restaurant.setLocation(saveRestaurantRequest.location());
+        restaurant.setRestType(saveRestaurantRequest.restType());
+        restaurant.setService(saveRestaurantRequest.service());
+        restaurant.setNumberOfEmployees(restaurant.getUsers().size());
 
-            restaurantRepo.save(restaurant);
+        restaurantRepo.save(restaurant);
 
-            return SimpleResponse.builder()
-                    .httpStatus(HttpStatus.OK)
-                    .message("successfully saved")
-                    .build();
-        }else throw new ForbiddenException("Forbidden 403");
+        return SimpleResponse.builder()
+                .httpStatus(HttpStatus.OK)
+                .message("successfully saved")
+                .build();
     }
 
     @Override
-    public SimpleResponse assignUserToRes(Long resId, Long jobId, Principal principal) {
+    public SimpleResponse assignUserToRes(Long jobId, Principal principal) {
+        User currentUser = currentUserService.returnCurrentUser(principal);
+        if (!currentUser.getRole().equals(Role.ADMIN)){
+            throw new ForbiddenException("Forbidden 403");
+        }
+        Long resId = currentUser.getRestaurant().getId();
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
-        JobApp jobApp = jobAppRepo.getJobAppById(jobId);
-
         if (restaurant.getNumberOfEmployees() > 15) {
             throw new BedRequestException("employees cannot be more than 15 people");
         }
+        JobApp jobApp = jobAppRepo.getJobAppById(jobId);
 
-        String email = principal.getName();
-        User currentUser = userRepo.getByEmail(email);
+        User user = new User();
+        user.setLastName(jobApp.getLastName());
+        user.setFirstName(jobApp.getFirstName());
+        user.setEmail(jobApp.getEmail());
+        user.setPassword(jobApp.getPassword());
+        user.setDateOfBirth(jobApp.getDateOfBirth());
+        user.setPhoneNumber(jobApp.getPhoneNumber());
+        user.setRole(jobApp.getRole());
+        user.setExperience(jobApp.getExperience());
+        userRepo.save(user);
 
-        if (currentUser.getRole().equals(Role.ADMIN) && restaurant.getUsers().contains(currentUser)){
-            User user = new User();
-            user.setLastName(jobApp.getLastName());
-            user.setFirstName(jobApp.getFirstName());
-            user.setEmail(jobApp.getEmail());
-            user.setPassword(jobApp.getPassword());
-            user.setDateOfBirth(jobApp.getDateOfBirth());
-            user.setPhoneNumber(jobApp.getPhoneNumber());
-            user.setRole(jobApp.getRole());
-            user.setExperience(jobApp.getExperience());
-            userRepo.save(user);
+        restaurant.addUser(user);
+        user.setRestaurant(restaurant);
+        restaurant.setNumberOfEmployees(restaurant.getUsers().size());
 
-            restaurant.addUser(user);
-            user.setRestaurant(restaurant);
-            restaurant.setNumberOfEmployees(restaurant.getUsers().size());
-
-            jobAppRepo.delete(jobApp);
-            return SimpleResponse.builder()
-                    .httpStatus(HttpStatus.OK)
-                    .message("You have been successfully hired")
-                    .build();
-        }else throw new ForbiddenException("Forbidden 403");
+        jobAppRepo.delete(jobApp);
+        return SimpleResponse.builder()
+                .httpStatus(HttpStatus.OK)
+                .message("You have been successfully hired")
+                .build();
     }
 
     @Override
-    public FindRestaurantResponse findById(Long resId, Principal principal) {
-        String email = principal.getName();
-        User currentUser = userRepo.getByEmail(email);
-        if (currentUser.getRole().equals(Role.DEVELOPER)){
-            Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
-            User user = null;
-            for (User restaurantUser : restaurant.getUsers()) {
-                if (restaurantUser.getRole().equals(Role.ADMIN)) {
-                    user = restaurantUser;
-                }
+    public FindRestaurantResponse findById(Long resId) {
+        Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
+
+        User user = findAdminUser(restaurant);
+        UserAminResponse response = convertAdmin(user);
+
+        List<MenuItemsResponse> collect = restaurant.getMenuItems().stream()
+                .map(this::convertMenu)
+                .collect(Collectors.toList());
+
+        return FindRestaurantResponse.builder()
+                .id(restaurant.getId())
+                .name(restaurant.getName())
+                .location(restaurant.getLocation())
+                .restType(restaurant.getRestType())
+                .numberOfEmployees(restaurant.getNumberOfEmployees())
+                .service(String.valueOf(restaurant.getService()+" %"))
+                .userAminResponse(response)
+                .menuItems(collect)
+                .build();
+    }
+
+    private MenuItemsResponse convertMenu(MenuItem menuItem) {
+        return new MenuItemsResponse(
+                menuItem.getId(), menuItem.getName(), menuItem.getImage(),
+                menuItem.getPrice(), menuItem.getDescription(), menuItem.isVegetarian()
+        );
+    }
+
+    private UserAminResponse convertAdmin(User user){
+        return new UserAminResponse(
+                user.getId(), user.getLastName(), user.getFirstName(),
+                user.getDateOfBirth(), user.getEmail(), user.getPhoneNumber(),
+                user.getRole(), user.getExperience()
+        );
+    }
+
+    private User findAdminUser(Restaurant restaurant) {
+        User user = null;
+        for (User restaurantUser : restaurant.getUsers()) {
+            if (restaurantUser.getRole().equals(Role.ADMIN)) {
+                user = restaurantUser;
             }
-            return FindRestaurantResponse.builder()
-                    .id(restaurant.getId())
-                    .name(restaurant.getName())
-                    .location(restaurant.getLocation())
-                    .restType(restaurant.getRestType())
-                    .numberOfEmployees(restaurant.getNumberOfEmployees())
-                    .service(restaurant.getService())
-                    .user(user)
-                    .menuItems(restaurant.getMenuItems())
-                    .build();
-        }else throw new ForbiddenException("Forbidden 403");
+        }
+        return user;
     }
 
     @Override
-    public SimpleResponse editRestaurant(Long restId, EditRestaurantRequest request, Principal principal) {
+    public SimpleResponse editRestaurant(EditRestaurantRequest request, Principal principal) {
+        User user = currentUserService.returnCurrentUser(principal);
+        if (!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.DEVELOPER))){
+            throw new ForbiddenException("Forbidden 403");
+        }
+        Long restId = user.getRestaurant().getId();
         Restaurant restaurant = restaurantRepo.getRestaurantById(restId);
 
-        String email = principal.getName();
-        User user = userRepo.getByEmail(email);
-
-        if (user.getRole().equals(Role.ADMIN) && restaurant.getUsers().contains(user)
-                || user.getRole().equals(Role.DEVELOPER)){
-            restaurant.setName(request.name());
-            restaurant.setLocation(request.location());
-            restaurant.setRestType(request.restType());
-            String service = String.valueOf(request.service());
-            restaurant.setService(service + " %");
-            restaurantRepo.save(restaurant);
-            return SimpleResponse.builder()
-                    .httpStatus(HttpStatus.OK)
-                    .message("Restaurant successfully edited")
-                    .build();
-
-        }else throw new ForbiddenException("Forbidden 403");
-
+        restaurant.setName(request.name());
+        restaurant.setLocation(request.location());
+        restaurant.setRestType(request.restType());
+        restaurant.setService(restaurant.getService());
+        restaurantRepo.save(restaurant);
+        return SimpleResponse.builder()
+                .httpStatus(HttpStatus.OK)
+                .message("Restaurant successfully edited")
+                .build();
     }
 
     @Override
     public SimpleResponse delete(Long resId, Principal principal) {
+        User user = currentUserService.returnCurrentUser(principal);
+        if (!user.getRole().equals(Role.DEVELOPER)){
+            throw new ForbiddenException("Forbidden 403");
+        }
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
-        String email = principal.getName();
-        User user = userRepo.getByEmail(email);
-        if (user.getRole().equals(Role.DEVELOPER)){
-            restaurantRepo.delete(restaurant);
-            return SimpleResponse.builder()
-                    .httpStatus(HttpStatus.OK)
-                    .message("Restaurant successfully deleted")
-                    .build();
-        }else throw new ForbiddenException("Forbidden 403");
+        restaurantRepo.delete(restaurant);
+        return SimpleResponse.builder()
+                .httpStatus(HttpStatus.OK)
+                .message("Restaurant successfully deleted")
+                .build();
     }
 
     @Override
-    public SimpleResponse rejectionApps(Long resId, Long jobId, Principal principal) {
+    public SimpleResponse rejectionApps(Long jobId, Principal principal) {
+        User user = currentUserService.returnCurrentUser(principal);
+        if (!user.getRole().equals(Role.ADMIN)) {
+            throw new ForbiddenException("Forbidden 403");
+        }
         JobApp jobApp = jobAppRepo.getJobAppById(jobId);
-        Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
-        String email = principal.getName();
-        User user = userRepo.getByEmail(email);
 
-        if (user.getRole().equals(Role.ADMIN) && restaurant.getUsers().contains(user)){
-            jobAppRepo.delete(jobApp);
-            return SimpleResponse.builder()
-                    .httpStatus(HttpStatus.OK)
-                    .message("Sorry, we won't be able to hire you." +
-                            " when there is a vacancy, we will contact you")
-                    .build();
-        }else throw new ForbiddenException("Forbidden 403");
+        jobAppRepo.delete(jobApp);
+        return SimpleResponse.builder()
+                .httpStatus(HttpStatus.OK)
+                .message("Sorry, we won't be able to hire you." +
+                        " when there is a vacancy, we will contact you")
+                .build();
     }
 
     private ALlRestResponse convert(Restaurant restaurant) {
@@ -208,11 +227,13 @@ public class RestaurantServiceImpl implements RestaurantService {
     public RestPagResponse findAll(int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<Restaurant> repoAll = restaurantRepo.findAll(pageable);
-        List<ALlRestResponse> aLlRestResponses = new ArrayList<>();
-        for (Restaurant restaurant : repoAll.getContent()) {
-            ALlRestResponse convert = convert(restaurant);
-            aLlRestResponses.add(convert);
-        }
+
+        if (repoAll.isEmpty()) throw new NotFoundException("Restaurants not found");
+
+        List<ALlRestResponse> aLlRestResponses = repoAll.getContent().stream()
+                .map(this::convert)
+                .collect(Collectors.toList());
+
         return RestPagResponse.builder()
                 .page(repoAll.getNumber() + 1)
                 .size(repoAll.getTotalPages())

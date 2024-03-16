@@ -8,7 +8,7 @@ import restaurant.entities.enums.Role;
 import java.time.LocalDate;
 
 @Builder
-public record AllUsersResponse(
+public record UserAminResponse(
         Long id,
         String lastName,
         String firstName,
