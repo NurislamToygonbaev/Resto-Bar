@@ -26,11 +26,14 @@ public class Restaurant {
     private int numberOfEmployees;
     private String service;
 
-    @OneToMany(cascade = {PERSIST, REMOVE, MERGE})
+    @OneToMany(cascade = {PERSIST, REMOVE, MERGE}, mappedBy = "restaurant")
     private List<User> users;
 
-    @OneToMany(cascade = {REMOVE, MERGE})
+    @OneToMany(cascade = {REMOVE, MERGE}, mappedBy = "restaurant")
     private List<MenuItem> menuItems;
+
+    @OneToMany(cascade = {REMOVE}, mappedBy = "restaurant")
+    private List<JobApp> jobApps;
 
     public void addUser(User user){
         if (this.users == null) this.users = new ArrayList<>();
@@ -40,5 +43,10 @@ public class Restaurant {
     public void addMenuItem(MenuItem menuItem){
         if (this.menuItems == null) this.menuItems = new ArrayList<>();
         this.menuItems.add(menuItem);
+    }
+
+    public void addJobApp(JobApp jobApp){
+        if (this.jobApps == null) this.jobApps = new ArrayList<>();
+        this.jobApps.add(jobApp);
     }
 }

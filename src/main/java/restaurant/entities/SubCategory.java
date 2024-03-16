@@ -6,6 +6,8 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static jakarta.persistence.CascadeType.*;
+
 @Entity
 @Table(name = "sub_categories")
 @Getter
@@ -20,7 +22,10 @@ public class SubCategory {
     private Long id;
     private String name;
 
-    @OneToMany
+    @ManyToOne(cascade = {DETACH})
+    private Category category;
+
+    @OneToMany(mappedBy = "subCategory", cascade = {REMOVE})
     private List<MenuItem> menuItems;
 
     public void addMenuItem(MenuItem menuItem){

@@ -6,6 +6,8 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static jakarta.persistence.CascadeType.*;
+
 @Entity
 @Table(name = "categories")
 @Getter @Setter
@@ -19,7 +21,7 @@ public class Category {
     private Long id;
     private String name;
 
-    @OneToMany
+    @OneToMany(cascade = {REMOVE}, mappedBy = "category")
     private List<SubCategory> subCategories;
 
     public void addSubCategory(SubCategory subCategory){

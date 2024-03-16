@@ -46,7 +46,8 @@ public class JwtFilter extends OncePerRequestFilter {
                                 )
                         );
             }catch (JWTVerificationException e){
-                response.sendError(400);
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Invalid token");
             }
         }
         filterChain.doFilter(request, response);

@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import static jakarta.persistence.CascadeType.*;
+
 @Entity
 @Table(name = "cheques")
 @Getter @Setter
@@ -22,8 +24,11 @@ public class Cheque {
     private BigDecimal priceAvg;
     private LocalDate createdAt;
 
-    @ManyToMany
+    @ManyToMany(cascade = {DETACH})
     private List<MenuItem> menuItems;
+
+    @ManyToOne(cascade = {DETACH})
+    private User user;
 
     public void addMenuItem(MenuItem menuItem){
         if (this.menuItems == null) this.menuItems = new ArrayList<>();

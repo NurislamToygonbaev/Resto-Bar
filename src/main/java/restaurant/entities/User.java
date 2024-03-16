@@ -32,25 +32,16 @@ public class User implements UserDetails {
     private Role role;
     private int experience;
 
-    @OneToMany
+    @OneToMany(cascade = {CascadeType.DETACH}, mappedBy = "user")
     private List<Cheque> cheques;
+
+    @ManyToOne(cascade = {CascadeType.DETACH})
+    private Restaurant restaurant;
 
     public void addCheque(Cheque cheque){
         if (this.cheques == null) this.cheques = new ArrayList<>();
         this.cheques.add(cheque);
     }
-
-    public User(String lastName, String firstName, LocalDate dateOfBirth, String email, String password, String phoneNumber, Role role, int experience) {
-        this.lastName = lastName;
-        this.firstName = firstName;
-        this.dateOfBirth = dateOfBirth;
-        this.email = email;
-        this.password = password;
-        this.phoneNumber = phoneNumber;
-        this.role = role;
-        this.experience = experience;
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(role);

@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 
+import static jakarta.persistence.CascadeType.*;
+
 @Entity
 @Table(name = "stopLists")
 @Getter @Setter
@@ -19,6 +21,6 @@ public class StopList {
     private String reason;
     private LocalDate date;
 
-    @OneToOne
+    @OneToOne(cascade = {DETACH, MERGE})
     private MenuItem menuItem;
 }

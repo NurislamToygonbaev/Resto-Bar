@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import static jakarta.persistence.CascadeType.*;
 
 @Entity
 @Table(name = "menuItems")
@@ -24,5 +28,21 @@ public class MenuItem {
     private String description;
     private boolean isVegetarian;
 
+    @ManyToOne(cascade = {DETACH})
+    private Restaurant restaurant;
+
+    @ManyToMany(cascade = {DETACH}, mappedBy = "menuItems")
+    private List<Cheque> cheques;
+
+    @OneToOne(mappedBy = "menuItem", cascade = {REMOVE})
+    private StopList stopList;
+
+    @ManyToOne(cascade = {DETACH})
+    private SubCategory subCategory;
+
+    public void addCheque(Cheque cheque){
+        if (this.cheques == null) this.cheques = new ArrayList<>();
+        this.cheques.add(cheque);
+    }
 
 }

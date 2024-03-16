@@ -19,8 +19,9 @@ public class AuthApi {
         return userService.signIn(signInRequest);
     }
 
-    @PostMapping("/sign-up")
-    public SimpleResponse singUp(@RequestBody @Valid SignUpRequest signUpRequest){
-        return userService.signUp(signUpRequest);
+    @PostMapping("/sign-up/{resId}")
+    public SimpleResponse singUp(@RequestBody @Valid SignUpRequest signUpRequest,
+                                 @PathVariable Long resId){
+        return userService.signUp(resId, signUpRequest);
     }
 }
