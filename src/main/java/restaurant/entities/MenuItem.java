@@ -35,7 +35,7 @@ public class MenuItem {
     @ManyToMany(cascade = {DETACH}, mappedBy = "menuItems")
     private List<Cheque> cheques;
 
-    @OneToOne(mappedBy = "menuItem", cascade = {REMOVE})
+    @OneToOne(mappedBy = "menuItem", cascade = {REMOVE, PERSIST, MERGE})
     private StopList stopList;
 
     @ManyToOne(cascade = {DETACH})

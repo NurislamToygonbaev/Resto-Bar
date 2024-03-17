@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import static jakarta.persistence.CascadeType.*;
 
 @Entity
-@Table(name = "stopLists")
+@Table(name = "stop-lists")
 @Getter @Setter
 @Builder
 @NoArgsConstructor

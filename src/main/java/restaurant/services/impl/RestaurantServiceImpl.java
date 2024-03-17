@@ -18,7 +18,6 @@ import restaurant.entities.User;
 import restaurant.entities.enums.Role;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.BedRequestException;
-import restaurant.exceptions.ForbiddenException;
 import restaurant.exceptions.NotFoundException;
 import restaurant.repository.JobAppRepository;
 import restaurant.repository.RestaurantRepository;
@@ -26,7 +25,6 @@ import restaurant.repository.UserRepository;
 import restaurant.services.RestaurantService;
 
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,11 +44,8 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override @Transactional
     public SimpleResponse save(Principal principal, SaveRestaurantRequest saveRestaurantRequest) {
-        User currentUser = currentUserService.returnCurrentUser(principal);
+        currentUserService.devops(principal);
         checkName(saveRestaurantRequest.name());
-        if (!currentUser.getRole().equals(Role.DEVELOPER)){
-            throw new ForbiddenException("Forbidden 403");
-        }
 
         boolean exists = userRepo.existsByEmail(saveRestaurantRequest.email());
         if (exists) {
@@ -91,17 +86,11 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     public SimpleResponse assignUserToRes(Long jobId, Principal principal) {
-        User currentUser = currentUserService.returnCurrentUser(principal);
+        User currentUser = currentUserService.adminUser(principal);
         JobApp jobApp = jobAppRepo.getJobAppById(jobId);
-        if (!currentUser.getRole().equals(Role.ADMIN)){
-            throw new ForbiddenException("Forbidden 403");
-        }
         Restaurant adminRestaurant = currentUser.getRestaurant();
-        Restaurant curRestaurant = restaurantRepo.getRestByAppId(jobId);
-
-        if (!curRestaurant.equals(adminRestaurant)) {
-            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
-        }
+        Restaurant userRestaurant = restaurantRepo.getRestByAppId(jobId);
+        currentUserService.checkForbidden(adminRestaurant, userRestaurant);
 
         Long resId = currentUser.getRestaurant().getId();
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
@@ -182,10 +171,7 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     public SimpleResponse editRestaurant(EditRestaurantRequest request, Principal principal) {
-        User user = currentUserService.returnCurrentUser(principal);
-        if (!(user.getRole().equals(Role.ADMIN))){
-            throw new ForbiddenException("Forbidden 403");
-        }
+        User user = currentUserService.adminAndChef(principal);
         checkName(request.name());
 
         Long restId = user.getRestaurant().getId();
@@ -205,10 +191,7 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     public SimpleResponse delete(Long resId, Principal principal) {
-        User user = currentUserService.returnCurrentUser(principal);
-        if (!user.getRole().equals(Role.DEVELOPER)){
-            throw new ForbiddenException("Forbidden 403");
-        }
+        currentUserService.devops(principal);
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
         restaurantRepo.delete(restaurant);
         return SimpleResponse.builder()
@@ -219,17 +202,11 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     public SimpleResponse rejectionApps(Long jobId, Principal principal) {
-        User user = currentUserService.returnCurrentUser(principal);
-        if (!user.getRole().equals(Role.ADMIN)) {
-            throw new ForbiddenException("Forbidden 403");
-        }
         JobApp jobApp = jobAppRepo.getJobAppById(jobId);
+        User user = currentUserService.adminUser(principal);
         Restaurant adminRestaurant = user.getRestaurant();
         Restaurant restaurant = restaurantRepo.getRestByAppId(jobId);
-
-        if (!restaurant.equals(adminRestaurant)) {
-            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
-        }
+        currentUserService.checkForbidden(adminRestaurant, restaurant);
 
         jobAppRepo.delete(jobApp);
         return SimpleResponse.builder()

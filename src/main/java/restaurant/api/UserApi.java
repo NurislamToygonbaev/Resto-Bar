@@ -56,6 +56,7 @@ public class UserApi {
         return restaurantService.rejectionApps(jobId, principal);
     }
 
+    @Secured({"ADMIN", "CHEF", "WAITER"})
     @PutMapping
     public HttpResponseForUser update(Principal principal,
                                       @RequestBody @Valid UpdateRequest updateRequest){

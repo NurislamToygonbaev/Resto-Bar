@@ -3,14 +3,12 @@ package restaurant.services.impl;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import restaurant.config.jwt.JwtService;
 import restaurant.dto.request.SignInRequest;
 import restaurant.dto.request.SignUpRequest;
@@ -19,11 +17,9 @@ import restaurant.dto.response.*;
 import restaurant.entities.JobApp;
 import restaurant.entities.Restaurant;
 import restaurant.entities.User;
-import restaurant.entities.enums.RestType;
 import restaurant.entities.enums.Role;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.BedRequestException;
-import restaurant.exceptions.ForbiddenException;
 import restaurant.exceptions.NotFoundException;
 import restaurant.repository.JobAppRepository;
 import restaurant.repository.RestaurantRepository;
@@ -135,11 +131,7 @@ public class UserServiceImpl implements UserService {
 
     @Override @Transactional
     public SignResponse saveUser(SignUpRequest signUpRequest, Principal principal) {
-        User currentUser = currentUserService.returnCurrentUser(principal);
-
-        if (!currentUser.getRole().equals(Role.ADMIN)){
-            throw new ForbiddenException("Forbidden 403");
-        }
+        User currentUser = currentUserService.adminUser(principal);
         checkEmail(signUpRequest.email());
         checkAge(signUpRequest);
 
@@ -173,11 +165,9 @@ public class UserServiceImpl implements UserService {
 
     @Override @Transactional
     public PaginationUser findALlUsers(int page, int size, Principal principal) {
-        User user = currentUserService.returnCurrentUser(principal);
+        User user = currentUserService.adminUser(principal);
         Long resId = user.getRestaurant().getId();
-        if (!user.getRole().equals(Role.ADMIN)) {
-            throw new ForbiddenException("Forbidden 403");
-        }
+
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<User> users = userRepo.findUserByRestaurantId(resId,pageable);
         List<AllUsersResponse> allUsersResponses = new ArrayList<>();
@@ -194,11 +184,8 @@ public class UserServiceImpl implements UserService {
 
     @Override @Transactional
     public PaginationUser findALlApps(int page, int size, Principal principal) {
-        User user = currentUserService.returnCurrentUser(principal);
+        User user = currentUserService.adminUser(principal);
         Long restId = user.getRestaurant().getId();
-        if (!user.getRole().equals(Role.ADMIN)) {
-            throw new ForbiddenException("Forbidden 403");
-        }
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<JobApp> jobApps = jobAppRepo.findAllByRestaurantId(restId,pageable);
         List<AllUsersResponse> allUsersResponses = new ArrayList<>();
@@ -216,7 +203,7 @@ public class UserServiceImpl implements UserService {
     @Override @Transactional
     public HttpResponseForUser update(Principal principal, UpdateRequest updateRequest) {
         checkEmail(updateRequest.email());
-        User user = currentUserService.returnCurrentUser(principal);
+        User user = currentUserService.adminAndChefAndWaiter(principal);
         checkAge(updateRequest, user.getRole());
 
         user.setLastName(updateRequest.lastName());
@@ -263,16 +250,11 @@ public class UserServiceImpl implements UserService {
     public HttpResponseForUser updateEmployees(Long userId, SignUpRequest request, Principal principal) {
         checkEmail(request.email());
         checkAge(request);
-        User user = userRepo.getUserById(userId);
-        User admin = currentUserService.returnCurrentUser(principal);
-        if (!admin.getRole().equals(Role.ADMIN)){
-            throw new ForbiddenException("Forbidden 403");
-        }
-        Restaurant adminRestaurant = admin.getRestaurant();
 
-        if (!user.getRestaurant().equals(adminRestaurant)) {
-            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
-        }
+        User user = userRepo.getUserById(userId);
+        User admin = currentUserService.adminUser(principal);
+        Restaurant adminRestaurant = admin.getRestaurant();
+        currentUserService.checkForbidden(adminRestaurant, user.getRestaurant());
 
         user.setFirstName(request.firstName());
         user.setEmail(request.email());
@@ -297,16 +279,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public AllUsersResponse findEmployee(Long userId, Principal principal) {
-        User currentUser = currentUserService.returnCurrentUser(principal);
-        if (!currentUser.getRole().equals(Role.ADMIN)){
-            throw new ForbiddenException("Forbidden 403");
-        }
+        User currentUser = currentUserService.adminUser(principal);
         User user = userRepo.getUserById(userId);
         Restaurant adminRestaurant = currentUser.getRestaurant();
-
-        if (!user.getRestaurant().equals(adminRestaurant)) {
-            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
-        }
+        currentUserService.checkForbidden(adminRestaurant, user.getRestaurant());
 
         return AllUsersResponse.builder()
                 .lastName(user.getLastName())
@@ -322,16 +298,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public SimpleResponse deleteEmployee(Long userId, Principal principal) {
-        User currentUser = currentUserService.returnCurrentUser(principal);
-        if (!currentUser.getRole().equals(Role.ADMIN)){
-            throw new ForbiddenException("Forbidden 403");
-        }
+        User currentUser = currentUserService.adminUser(principal);
         Restaurant adminRestaurant = currentUser.getRestaurant();
         User user = userRepo.getUserById(userId);
-
-        if (!user.getRestaurant().equals(adminRestaurant)) {
-            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
-        }
+        currentUserService.checkForbidden(adminRestaurant, user.getRestaurant());
 
         userRepo.delete(user);
         return SimpleResponse.builder()
