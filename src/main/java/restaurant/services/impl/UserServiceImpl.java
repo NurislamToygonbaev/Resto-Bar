@@ -140,7 +140,6 @@ public class UserServiceImpl implements UserService {
         if (!currentUser.getRole().equals(Role.ADMIN)){
             throw new ForbiddenException("Forbidden 403");
         }
-
         checkEmail(signUpRequest.email());
         checkAge(signUpRequest);
 
@@ -216,7 +215,10 @@ public class UserServiceImpl implements UserService {
 
     @Override @Transactional
     public HttpResponseForUser update(Principal principal, UpdateRequest updateRequest) {
+        checkEmail(updateRequest.email());
         User user = currentUserService.returnCurrentUser(principal);
+        checkAge(updateRequest, user.getRole());
+
         user.setLastName(updateRequest.lastName());
         user.setFirstName(updateRequest.firstName());
         user.setEmail(updateRequest.email());
@@ -225,6 +227,7 @@ public class UserServiceImpl implements UserService {
         user.setExperience(updateRequest.experience());
         user.setDateOfBirth(updateRequest.dateOfBirth());
         userRepo.save(user);
+
         return HttpResponseForUser.builder()
                 .token(jwtService.createToken(user))
                 .email(user.getEmail())
@@ -235,14 +238,41 @@ public class UserServiceImpl implements UserService {
                         .build())
                 .build();
     }
+    private void checkAge(UpdateRequest signUpRequest, Role role) {
+        if (role.equals(Role.CHEF)) {
+            int currentYear = LocalDate.now().getYear();
+            int year = signUpRequest.dateOfBirth().getYear();
+            int age = currentYear - year;
+            if (age >= 45 || age < 25) {
+                throw new BedRequestException("The age limit should be from 25 to 45");
+            }
+            if (signUpRequest.experience() <= 1) {
+                throw new BedRequestException("experience of at least 2 years");
+            }
+        } else if (role.equals(Role.WAITER)) {
+            int year = signUpRequest.dateOfBirth().getYear();
+            int currentYear = LocalDate.now().getYear();
+            int age = currentYear - year;
+            if (age >= 30 || age < 18) {
+                throw new BedRequestException("The age limit should be from 18 to 30");
+            }
+        }
+    }
 
     @Override @Transactional
     public HttpResponseForUser updateEmployees(Long userId, SignUpRequest request, Principal principal) {
+        checkEmail(request.email());
+        checkAge(request);
+        User user = userRepo.getUserById(userId);
         User admin = currentUserService.returnCurrentUser(principal);
         if (!admin.getRole().equals(Role.ADMIN)){
             throw new ForbiddenException("Forbidden 403");
         }
-        User user = userRepo.getUserById(userId);
+        Restaurant adminRestaurant = admin.getRestaurant();
+
+        if (!user.getRestaurant().equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
 
         user.setFirstName(request.firstName());
         user.setEmail(request.email());
@@ -271,8 +301,12 @@ public class UserServiceImpl implements UserService {
         if (!currentUser.getRole().equals(Role.ADMIN)){
             throw new ForbiddenException("Forbidden 403");
         }
-
         User user = userRepo.getUserById(userId);
+        Restaurant adminRestaurant = currentUser.getRestaurant();
+
+        if (!user.getRestaurant().equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
 
         return AllUsersResponse.builder()
                 .lastName(user.getLastName())
@@ -292,7 +326,12 @@ public class UserServiceImpl implements UserService {
         if (!currentUser.getRole().equals(Role.ADMIN)){
             throw new ForbiddenException("Forbidden 403");
         }
+        Restaurant adminRestaurant = currentUser.getRestaurant();
         User user = userRepo.getUserById(userId);
+
+        if (!user.getRestaurant().equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
 
         userRepo.delete(user);
         return SimpleResponse.builder()

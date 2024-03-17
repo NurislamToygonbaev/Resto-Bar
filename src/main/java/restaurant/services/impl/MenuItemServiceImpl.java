@@ -26,10 +26,14 @@ import java.security.Principal;
 public class MenuItemServiceImpl implements MenuItemService {
     private final MenuItemRepository menuItemRepo;
     private final CurrentUserService currentUserService;
+    private final RestaurantRepository restaurantRepo;
 
     private void checkName(String name) {
         boolean b = menuItemRepo.existsByName(name);
         if (b) throw new AlreadyExistsException("Category with name: " + name + " already have");
+    }
+    private void checkMenuId(Long menuId){
+        menuItemRepo.getMenuById(menuId);
     }
 
     @Override
@@ -64,6 +68,13 @@ public class MenuItemServiceImpl implements MenuItemService {
         if (!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.CHEF) ||
                 user.getRole().equals(Role.WAITER))){
             throw new ForbiddenException("Forbidden 403");
+        }
+        checkMenuId(menuId);
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant curRestaurant = restaurantRepo.getRestByMenuId(menuId);
+
+        if (!curRestaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
         }
 
         MenuItem menuItem = menuItemRepo.getMenuById(menuId);

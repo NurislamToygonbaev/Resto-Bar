@@ -1,5 +1,6 @@
 package restaurant.api;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +19,7 @@ public class MenuAPi {
 
     @Secured({"ADMIN", "CHEF"})
     @PostMapping
-    public SimpleResponse saveMenu(@RequestBody SaveMenuRequest saveMenuRequest,
+    public SimpleResponse saveMenu(@RequestBody @Valid SaveMenuRequest saveMenuRequest,
                                    Principal principal){
         return menuItemService.save(principal, saveMenuRequest);
     }

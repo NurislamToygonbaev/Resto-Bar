@@ -1,5 +1,6 @@
 package restaurant.api;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
@@ -20,14 +21,14 @@ public class RestaurantApi {
 
     @Secured("DEVELOPER")
     @PostMapping
-    public SimpleResponse createRestAndAdmin(@RequestBody SaveRestaurantRequest saveRestaurantRequest,
+    public SimpleResponse createRestAndAdmin(@RequestBody @Valid SaveRestaurantRequest saveRestaurantRequest,
                                              Principal principal){
         return restaurantService.save(principal, saveRestaurantRequest);
     }
 
-    @Secured({"ADMIN", "DEVELOPER"})
+    @Secured({"ADMIN"})
     @PutMapping
-    public SimpleResponse editRestaurant(@RequestBody EditRestaurantRequest editRestaurantRequest,
+    public SimpleResponse editRestaurant(@RequestBody @Valid EditRestaurantRequest editRestaurantRequest,
                                          Principal principal){
         return restaurantService.editRestaurant(editRestaurantRequest, principal);
     }

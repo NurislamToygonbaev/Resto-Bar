@@ -9,15 +9,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import restaurant.dto.request.CatSaveRequest;
 import restaurant.dto.response.*;
-import restaurant.entities.Category;
-import restaurant.entities.MenuItem;
-import restaurant.entities.SubCategory;
-import restaurant.entities.User;
+import restaurant.entities.*;
 import restaurant.entities.enums.Role;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.ForbiddenException;
 import restaurant.exceptions.NotFoundException;
 import restaurant.repository.CategoryRepository;
+import restaurant.repository.RestaurantRepository;
 import restaurant.repository.SubCategoryRepository;
 import restaurant.repository.UserRepository;
 import restaurant.services.SubCategoryService;
@@ -32,18 +30,28 @@ public class SubCategoryServiceImpl implements SubCategoryService {
     private final SubCategoryRepository subCategoryRepo;
     private final CategoryRepository categoryRepo;
     private final CurrentUserService currentUserService;
+    private final RestaurantRepository restaurantRepo;
 
     private void checkName(String name) {
         boolean b = subCategoryRepo.existsByName(name);
         if (b) throw new AlreadyExistsException("Category with name: " + name + " already have");
     }
+    private void checkSubId(Long subId){
+        subCategoryRepo.getSubCategoryId(subId);
+    }
     @Override @Transactional
     public SimpleResponse saveSub(Long catId, CatSaveRequest catSaveRequest, Principal principal) {
         checkName(catSaveRequest.name());
         User user = currentUserService.returnCurrentUser(principal);
-
         if (!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.CHEF))){
             throw new ForbiddenException("Forbidden 403");
+        }
+        categoryRepo.getCatById(catId);
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant restaurant = restaurantRepo.getRestaurantByCatId(catId);
+
+        if (!restaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
         }
 
         Category category = categoryRepo.getCatById(catId);
@@ -68,6 +76,12 @@ public class SubCategoryServiceImpl implements SubCategoryService {
             throw new ForbiddenException("Forbidden 403");
         }
         categoryRepo.getCatById(catId);
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant restaurant = restaurantRepo.getRestaurantByCatId(catId);
+
+        if (!restaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
 
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<SubCategory> subCategories = subCategoryRepo.findSubCategoriesById(catId, pageable);
@@ -96,6 +110,13 @@ public class SubCategoryServiceImpl implements SubCategoryService {
                 user.getRole().equals(Role.WAITER))){
             throw new ForbiddenException("Forbidden 403");
         }
+        Restaurant adminRestaurant = user.getRestaurant();
+        checkSubId(subId);
+        Restaurant restaurant = restaurantRepo.getRestaurantBySubId(subId);
+
+        if (!restaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
         SubCategory subCategory = subCategoryRepo.getSubCategoryId(subId);
         List<MenuItemsResponse> collect = subCategory.getMenuItems().stream()
                 .map(this::convertToMenu)
@@ -114,7 +135,15 @@ public class SubCategoryServiceImpl implements SubCategoryService {
         if (!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.CHEF))){
             throw new ForbiddenException("Forbidden 403");
         }
+        checkSubId(subId);
         checkName(catSaveRequest.name());
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant restaurant = restaurantRepo.getRestaurantBySubId(subId);
+
+        if (!restaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
+
         SubCategory subCategory = subCategoryRepo.getSubCategoryId(subId);
 
         subCategory.setName(catSaveRequest.name());
@@ -127,10 +156,18 @@ public class SubCategoryServiceImpl implements SubCategoryService {
     @Override
     public SimpleResponse delete(Long subId, Principal principal) {
         User user = currentUserService.returnCurrentUser(principal);
+        checkSubId(subId);
         if (!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.CHEF))){
             throw new ForbiddenException("Forbidden 403");
         }
+        Restaurant adminRestaurant = user.getRestaurant();
         SubCategory subCategory = subCategoryRepo.getSubCategoryId(subId);
+        Restaurant restaurant = restaurantRepo.getRestaurantBySubId(subId);
+
+        if (!restaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
+
         subCategoryRepo.delete(subCategory);
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)

@@ -15,4 +15,18 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
         return findRestaurantByById(resId).orElseThrow(() ->
                 new NotFoundException("Restaurant with id: "+resId+" not found"));
     }
+
+    @Query("select r from Restaurant r join r.menuItems m where m.subCategory.id =:subId")
+    Restaurant getRestaurantBySubId(Long subId);
+
+    @Query("select r from Restaurant r join r.menuItems m where m.subCategory.category.id = :catId")
+    Restaurant getRestaurantByCatId(Long catId);
+
+    @Query("select r from Restaurant r join r.jobApps j where j.id =:jobId")
+    Restaurant getRestByAppId(Long jobId);
+
+    @Query("select r from Restaurant r join r.menuItems m where m.id =:menuId")
+    Restaurant getRestByMenuId(Long menuId);
+
+    boolean existsByName(String name);
 }

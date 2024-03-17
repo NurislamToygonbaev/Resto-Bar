@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import restaurant.dto.request.CatSaveRequest;
 import restaurant.dto.response.*;
 import restaurant.entities.Category;
+import restaurant.entities.Restaurant;
 import restaurant.entities.SubCategory;
 import restaurant.entities.User;
 import restaurant.entities.enums.Role;
@@ -18,6 +19,7 @@ import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.ForbiddenException;
 import restaurant.exceptions.NotFoundException;
 import restaurant.repository.CategoryRepository;
+import restaurant.repository.RestaurantRepository;
 import restaurant.repository.UserRepository;
 import restaurant.services.CategoryService;
 
@@ -30,10 +32,14 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepo;
     private final CurrentUserService currentUserService;
+    private final RestaurantRepository restaurantRepo;
 
     private void checkName(String name) {
         boolean b = categoryRepo.existsByName(name);
         if (b) throw new AlreadyExistsException("Category with name: " + name + " already have");
+    }
+    private void checkCatId(Long catId){
+        categoryRepo.getCatById(catId);
     }
 
     @Override
@@ -60,6 +66,13 @@ public class CategoryServiceImpl implements CategoryService {
         if (!(user.getRole().equals(Role.CHEF) || user.getRole().equals(Role.ADMIN) ||
                 user.getRole().equals(Role.WAITER))) {
             throw new ForbiddenException("Forbidden 403");
+        }
+        checkCatId(catId);
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant curRestaurant = restaurantRepo.getRestaurantByCatId(catId);
+
+        if (!curRestaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
         }
 
         Category category = categoryRepo.getCatById(catId);
@@ -88,8 +101,16 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public SimpleResponse updateCat(Long catId, CatSaveRequest catSaveRequest, Principal principal) {
         User user = currentUserService.returnCurrentUser(principal);
+        checkCatId(catId);
+        checkName(catSaveRequest.name());
         if (!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.CHEF))) {
             throw new ForbiddenException("Forbidden 403");
+        }
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant curRestaurant = restaurantRepo.getRestaurantByCatId(catId);
+
+        if (!curRestaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
         }
         checkName(catSaveRequest.name());
         Category category = categoryRepo.getCatById(catId);
@@ -106,6 +127,14 @@ public class CategoryServiceImpl implements CategoryService {
         if (!user.getRole().equals(Role.ADMIN)) {
             throw new ForbiddenException("Forbidden 403");
         }
+        Restaurant adminRestaurant = user.getRestaurant();
+        checkCatId(catId);
+        Restaurant curRestaurant = restaurantRepo.getRestaurantByCatId(catId);
+
+        if (!curRestaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
+
         Category category = categoryRepo.getCatById(catId);
         categoryRepo.delete(category);
         return SimpleResponse.builder()

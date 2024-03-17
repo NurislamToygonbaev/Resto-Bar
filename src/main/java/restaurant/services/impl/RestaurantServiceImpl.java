@@ -39,9 +39,15 @@ public class RestaurantServiceImpl implements RestaurantService {
     private final JobAppRepository jobAppRepo;
     private final CurrentUserService currentUserService;
 
+    private void checkName(String name){
+        boolean exists = restaurantRepo.existsByName(name);
+        if (exists) throw new AlreadyExistsException("Restaurant with name: "+name+" already have");
+    }
+
     @Override @Transactional
     public SimpleResponse save(Principal principal, SaveRestaurantRequest saveRestaurantRequest) {
         User currentUser = currentUserService.returnCurrentUser(principal);
+        checkName(saveRestaurantRequest.name());
         if (!currentUser.getRole().equals(Role.DEVELOPER)){
             throw new ForbiddenException("Forbidden 403");
         }
@@ -86,15 +92,22 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     public SimpleResponse assignUserToRes(Long jobId, Principal principal) {
         User currentUser = currentUserService.returnCurrentUser(principal);
+        JobApp jobApp = jobAppRepo.getJobAppById(jobId);
         if (!currentUser.getRole().equals(Role.ADMIN)){
             throw new ForbiddenException("Forbidden 403");
         }
+        Restaurant adminRestaurant = currentUser.getRestaurant();
+        Restaurant curRestaurant = restaurantRepo.getRestByAppId(jobId);
+
+        if (!curRestaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
+
         Long resId = currentUser.getRestaurant().getId();
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
         if (restaurant.getNumberOfEmployees() > 15) {
             throw new BedRequestException("employees cannot be more than 15 people");
         }
-        JobApp jobApp = jobAppRepo.getJobAppById(jobId);
 
         User user = new User();
         user.setLastName(jobApp.getLastName());
@@ -169,9 +182,11 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     public SimpleResponse editRestaurant(EditRestaurantRequest request, Principal principal) {
         User user = currentUserService.returnCurrentUser(principal);
-        if (!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.DEVELOPER))){
+        if (!(user.getRole().equals(Role.ADMIN))){
             throw new ForbiddenException("Forbidden 403");
         }
+        checkName(request.name());
+
         Long restId = user.getRestaurant().getId();
         Restaurant restaurant = restaurantRepo.getRestaurantById(restId);
 
@@ -207,6 +222,12 @@ public class RestaurantServiceImpl implements RestaurantService {
             throw new ForbiddenException("Forbidden 403");
         }
         JobApp jobApp = jobAppRepo.getJobAppById(jobId);
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant restaurant = restaurantRepo.getRestByAppId(jobId);
+
+        if (!restaurant.equals(adminRestaurant)) {
+            throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");
+        }
 
         jobAppRepo.delete(jobApp);
         return SimpleResponse.builder()

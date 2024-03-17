@@ -1,5 +1,6 @@
 package restaurant.api;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,7 @@ public class UserApi {
 
     @Secured("ADMIN")
     @PostMapping
-    public SignResponse saveUser(@RequestBody SignUpRequest signUpRequest,
+    public SignResponse saveUser(@RequestBody @Valid SignUpRequest signUpRequest,
                                  Principal principal){
         return userService.saveUser(signUpRequest, principal);
     }
@@ -57,7 +58,7 @@ public class UserApi {
 
     @PutMapping
     public HttpResponseForUser update(Principal principal,
-                                      @RequestBody UpdateRequest updateRequest){
+                                      @RequestBody @Valid UpdateRequest updateRequest){
         return userService.update(principal, updateRequest);
     }
 
