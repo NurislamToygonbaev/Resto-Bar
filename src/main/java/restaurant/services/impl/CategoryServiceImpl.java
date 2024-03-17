@@ -85,7 +85,8 @@ public class CategoryServiceImpl implements CategoryService {
                 .flatMap(subCategory -> subCategory.getMenuItems().stream())
                 .map(menuItem -> new MenuItemsResponse(
                         menuItem.getId(), menuItem.getName(), menuItem.getImage(),
-                        menuItem.getPrice(), menuItem.getDescription(), menuItem.isVegetarian()
+                        menuItem.getPrice(), menuItem.getDescription(), menuItem.isVegetarian(),
+                        menuItem.getQuantity()
                 ))
                 .collect(Collectors.toList());
 
@@ -115,9 +116,11 @@ public class CategoryServiceImpl implements CategoryService {
         checkName(catSaveRequest.name());
         Category category = categoryRepo.getCatById(catId);
         category.setName(catSaveRequest.name());
+        categoryRepo.save(category);
+
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)
-                .message("Category successfully updated")
+                .message("Category with name: "+category.getName()+" successfully updated")
                 .build();
     }
 

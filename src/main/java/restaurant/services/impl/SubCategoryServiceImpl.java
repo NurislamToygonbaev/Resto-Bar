@@ -207,7 +207,8 @@ public class SubCategoryServiceImpl implements SubCategoryService {
     private MenuItemsResponse convertToMenu(MenuItem menuItem) {
         return new MenuItemsResponse(
                 menuItem.getId(), menuItem.getName(), menuItem.getImage(),
-                menuItem.getPrice(), menuItem.getDescription(), menuItem.isVegetarian()
+                menuItem.getPrice(), menuItem.getDescription(), menuItem.isVegetarian(),
+                menuItem.getQuantity()
         );
     }
 

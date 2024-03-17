@@ -9,7 +9,7 @@ import restaurant.services.ChequeService;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/cheque")
-public class ChequeAPi {
+public class ChequeApi {
     private final ChequeService chequeService;
 
 //    @PostMapping("/{menuId}/{userId}")

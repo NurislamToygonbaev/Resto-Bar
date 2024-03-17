@@ -10,6 +10,7 @@ public record MenuItemsResponse(
         String image,
         BigDecimal price,
         String description,
-        boolean isVegetarian
+        boolean isVegetarian,
+        int quantity
 ) {
 }

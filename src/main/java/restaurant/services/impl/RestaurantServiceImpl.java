@@ -157,7 +157,8 @@ public class RestaurantServiceImpl implements RestaurantService {
     private MenuItemsResponse convertMenu(MenuItem menuItem) {
         return new MenuItemsResponse(
                 menuItem.getId(), menuItem.getName(), menuItem.getImage(),
-                menuItem.getPrice(), menuItem.getDescription(), menuItem.isVegetarian()
+                menuItem.getPrice(), menuItem.getDescription(), menuItem.isVegetarian(),
+                menuItem.getQuantity()
         );
     }
 
@@ -195,6 +196,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         restaurant.setRestType(request.restType());
         restaurant.setService(restaurant.getService());
         restaurantRepo.save(restaurant);
+
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)
                 .message("Restaurant successfully edited")

@@ -27,6 +27,7 @@ public class MenuItem {
     @Column(length = 1000)
     private String description;
     private boolean isVegetarian;
+    private int quantity;
 
     @ManyToOne(cascade = {DETACH})
     private Restaurant restaurant;

@@ -14,6 +14,8 @@ public record SaveMenuRequest(
         BigDecimal price,
         @NotBlank
         String description,
-        boolean isVegetarian
+        boolean isVegetarian,
+        @ExperienceValidation
+        int quantity
 ) {
 }
