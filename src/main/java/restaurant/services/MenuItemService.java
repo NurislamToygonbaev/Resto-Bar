@@ -1,5 +1,6 @@
 package restaurant.services;
 
+import restaurant.dto.request.QuantityRequest;
 import restaurant.dto.request.SaveMenuRequest;
 import restaurant.dto.response.MenuItemsResponse;
 import restaurant.dto.response.MenuPagination;
@@ -23,4 +24,6 @@ public interface MenuItemService {
     MenuPagination filterByPrice(String ascOrDesc, int page, int size, Principal principal);
 
     MenuPagination filterVegetarian(boolean trueOrFalse, int page, int size, Principal principal);
+
+    SimpleResponse addQuantity(Long menuId, QuantityRequest request, Principal principal);
 }

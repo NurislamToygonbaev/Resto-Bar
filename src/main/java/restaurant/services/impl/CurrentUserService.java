@@ -77,6 +77,21 @@ public class CurrentUserService {
         }
         return user;
     }
+    public User adminAndWaiter(Principal principal){
+        if (principal == null) {
+            throw new IllegalArgumentException("Principal cannot be null");
+        }
+        String email = principal.getName();
+        User user = userRepo.getByEmail(email);
+
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found for email: " + email);
+        }
+        if (!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.WAITER))){
+            throw new ForbiddenException("Forbidden 403");
+        }
+        return user;
+    }
     public void checkForbidden(Restaurant adminRestaurant, Restaurant userRestaurant){
         if (!userRestaurant.equals(adminRestaurant)) {
             throw new ForbiddenException("Forbidden 403 - You are not allowed to delete employees from other restaurants");

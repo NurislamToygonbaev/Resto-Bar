@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import restaurant.dto.request.QuantityRequest;
 import restaurant.dto.request.SaveMenuRequest;
 import restaurant.dto.response.MenuItemsResponse;
 import restaurant.dto.response.MenuPagination;
@@ -59,15 +60,6 @@ public class MenuItemServiceImpl implements MenuItemService {
 
         restaurant.addMenuItem(menuItem);
         menuItem.setRestaurant(restaurant);
-
-        StopList itemStopList = menuItem.getStopList();
-        if (itemStopList != null){
-            stopListRepo.delete(itemStopList);
-        }
-
-        StopList stopList = new StopList();
-        stopList.setMenuItem(menuItem);
-        menuItem.setStopList(stopList);
         menuItemRepo.save(menuItem);
 
         return SimpleResponse.builder()
@@ -133,7 +125,13 @@ public class MenuItemServiceImpl implements MenuItemService {
         menu.setPrice(saveMenuRequest.price());
         menu.setVegetarian(saveMenuRequest.isVegetarian());
         menu.setQuantity(saveMenuRequest.quantity());
+
         menuItemRepo.save(menu);
+
+        StopList stopList = menu.getStopList();
+        if (stopList != null) {
+            stopListRepo.delete(stopList);
+        }
 
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)
@@ -217,6 +215,27 @@ public class MenuItemServiceImpl implements MenuItemService {
                 .page(menuItemPage.getNumber() + 1)
                 .size(menuItemPage.getTotalPages())
                 .response(collected)
+                .build();
+    }
+
+    @Override
+    public SimpleResponse addQuantity(Long menuId, QuantityRequest request, Principal principal) {
+        User user = currentUserService.adminAndChef(principal);
+        MenuItem menu = menuItemRepo.getMenuById(menuId);
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant userRestaurant = menu.getRestaurant();
+        currentUserService.checkForbidden(adminRestaurant, userRestaurant);
+
+        menu.setQuantity(request.quantity());
+        menuItemRepo.save(menu);
+
+        StopList stopList = menu.getStopList();
+        if (stopList != null){
+            stopListRepo.delete(stopList);
+        }
+        return SimpleResponse.builder()
+                .httpStatus(HttpStatus.OK)
+                .message("Successfully added quantity to menu with name: "+menu.getName())
                 .build();
     }
 

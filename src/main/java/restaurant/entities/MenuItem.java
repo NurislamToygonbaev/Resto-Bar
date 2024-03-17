@@ -45,5 +45,4 @@ public class MenuItem {
         if (this.cheques == null) this.cheques = new ArrayList<>();
         this.cheques.add(cheque);
     }
-
 }

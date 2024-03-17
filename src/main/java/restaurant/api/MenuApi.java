@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
+import restaurant.dto.request.QuantityRequest;
 import restaurant.dto.request.SaveMenuRequest;
 import restaurant.dto.response.MenuItemsResponse;
 import restaurant.dto.response.MenuPagination;
@@ -77,5 +78,13 @@ public class MenuApi {
                                         @RequestParam int page,
                                         @RequestParam int size){
         return menuItemService.filterVegetarian(trueOrFalse, page, size, principal);
+    }
+
+    @Secured({"ADMIN", "CHEF"})
+    @PatchMapping("/{menuId}")
+    public SimpleResponse addQuantityToMenu(@PathVariable Long menuId,
+                                            Principal principal,
+                                            @RequestBody QuantityRequest request){
+        return menuItemService.addQuantity(menuId, request, principal);
     }
 }
