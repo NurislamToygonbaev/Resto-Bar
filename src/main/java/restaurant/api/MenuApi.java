@@ -72,7 +72,7 @@ public class MenuApi {
     }
 
     @Secured({"ADMIN", "CHEF", "WAITER"})
-    @GetMapping("/vegetarian")
+    @GetMapping("/veg")
     public MenuPagination filterVegetarian(Principal principal,
                                         @RequestParam boolean trueOrFalse,
                                         @RequestParam int page,

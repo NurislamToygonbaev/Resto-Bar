@@ -6,13 +6,11 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 import restaurant.dto.request.CatSaveRequest;
 import restaurant.dto.response.CatResponse;
-import restaurant.dto.response.CategoriesResponse;
 import restaurant.dto.response.CategoryPagination;
 import restaurant.dto.response.SimpleResponse;
 import restaurant.services.CategoryService;
 
 import java.security.Principal;
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
