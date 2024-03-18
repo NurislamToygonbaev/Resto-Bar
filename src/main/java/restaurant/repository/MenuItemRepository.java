@@ -35,12 +35,12 @@ MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
     @Query("""
             select m from MenuItem m
-                where (m.name ilike (:keyword)
+                where m.restaurant.id = :resId
+                and (m.name ilike (:keyword)
                 or m.description ilike (:keyword)
                 or m.image ilike (:keyword)
                 or m.subCategory.name ilike (:keyword)
                 or m.subCategory.category.name ilike (:keyword))
-                and m.restaurant.id = :resId
             """)
     List<MenuItem> searchMenuItemBy(Long resId, String keyword);
 

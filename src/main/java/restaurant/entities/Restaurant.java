@@ -35,6 +35,9 @@ public class Restaurant {
     @OneToMany(cascade = {REMOVE}, mappedBy = "restaurant")
     private List<JobApp> jobApps;
 
+    @OneToMany(cascade = {REMOVE}, mappedBy = "restaurant")
+    private List<Category> categories;
+
     public void addUser(User user){
         if (this.users == null) this.users = new ArrayList<>();
         this.users.add(user);
@@ -48,5 +51,9 @@ public class Restaurant {
     public void addJobApp(JobApp jobApp){
         if (this.jobApps == null) this.jobApps = new ArrayList<>();
         this.jobApps.add(jobApp);
+    }
+    public void addCategories(Category category){
+        if (this.categories == null) this.categories = new ArrayList<>();
+        this.categories.add(category);
     }
 }

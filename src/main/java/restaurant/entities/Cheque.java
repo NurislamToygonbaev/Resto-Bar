@@ -24,7 +24,7 @@ public class Cheque {
     private BigDecimal priceAvg;
     private LocalDate createdAt;
 
-    @ManyToMany(cascade = {DETACH})
+    @ManyToMany(cascade = {DETACH, MERGE})
     private List<MenuItem> menuItems;
 
     @ManyToOne(cascade = {DETACH})

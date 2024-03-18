@@ -72,6 +72,7 @@ public class UserServiceImpl implements UserService {
         return SignResponse.builder()
                 .token(jwtService.createToken(user))
                 .id(user.getId())
+                .email(user.getEmail())
                 .role(user.getRole().name())
                 .httpStatus(HttpStatus.OK)
                 .message("Successful login")

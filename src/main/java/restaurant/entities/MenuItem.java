@@ -32,10 +32,10 @@ public class MenuItem {
     @ManyToOne(cascade = {DETACH})
     private Restaurant restaurant;
 
-    @ManyToMany(cascade = {DETACH}, mappedBy = "menuItems")
+    @ManyToMany(cascade = {DETACH, MERGE}, mappedBy = "menuItems")
     private List<Cheque> cheques;
 
-    @OneToOne(mappedBy = "menuItem", cascade = {REMOVE, PERSIST, MERGE})
+    @OneToOne(mappedBy = "menuItem", cascade = {REMOVE, MERGE})
     private StopList stopList;
 
     @ManyToOne(cascade = {DETACH})

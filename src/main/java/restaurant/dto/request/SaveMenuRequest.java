@@ -10,7 +10,6 @@ public record SaveMenuRequest(
         String name,
         @NotBlank
         String image,
-        @ExperienceValidation
         BigDecimal price,
         @NotBlank
         String description,

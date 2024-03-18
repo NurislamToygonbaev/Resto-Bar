@@ -28,10 +28,11 @@ public class MenuApi {
     }
 
     @Secured({"ADMIN", "CHEF"})
-    @PostMapping
+    @PostMapping("/{subId}")
     public SimpleResponse saveMenu(@RequestBody @Valid SaveMenuRequest saveMenuRequest,
+                                   @PathVariable Long subId,
                                    Principal principal){
-        return menuItemService.save(principal, saveMenuRequest);
+        return menuItemService.save(subId, principal, saveMenuRequest);
     }
 
     @Secured({"ADMIN", "CHEF", "WAITER"})

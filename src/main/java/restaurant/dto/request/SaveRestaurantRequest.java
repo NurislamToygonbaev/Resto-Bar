@@ -23,7 +23,7 @@ public record SaveRestaurantRequest(
         String location,
         @Enumerated(EnumType.STRING)
         RestType restType,
-        @NotBlank
+        @ExperienceValidation
         int service,
         @NotBlank
         String lastName,

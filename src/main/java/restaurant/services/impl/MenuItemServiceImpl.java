@@ -12,16 +12,14 @@ import restaurant.dto.request.SaveMenuRequest;
 import restaurant.dto.response.MenuItemsResponse;
 import restaurant.dto.response.MenuPagination;
 import restaurant.dto.response.SimpleResponse;
-import restaurant.entities.MenuItem;
-import restaurant.entities.Restaurant;
-import restaurant.entities.StopList;
-import restaurant.entities.User;
+import restaurant.entities.*;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.BedRequestException;
 import restaurant.exceptions.NotFoundException;
 import restaurant.repository.MenuItemRepository;
 import restaurant.repository.RestaurantRepository;
 import restaurant.repository.StopListRepository;
+import restaurant.repository.SubCategoryRepository;
 import restaurant.services.MenuItemService;
 
 import java.security.Principal;
@@ -35,6 +33,7 @@ public class MenuItemServiceImpl implements MenuItemService {
     private final CurrentUserService currentUserService;
     private final RestaurantRepository restaurantRepo;
     private final StopListRepository stopListRepo;
+    private final SubCategoryRepository subCategoryRepo;
 
     private void checkName(String name) {
         boolean b = menuItemRepo.existsByName(name);
@@ -44,8 +43,8 @@ public class MenuItemServiceImpl implements MenuItemService {
         menuItemRepo.getMenuById(menuId);
     }
     @Override @Transactional
-    public SimpleResponse save(Principal principal, SaveMenuRequest saveMenuRequest) {
-        checkName(saveMenuRequest.name());
+    public SimpleResponse save(Long subId, Principal principal, SaveMenuRequest saveMenuRequest) {
+        SubCategory subCategory = subCategoryRepo.getSubCategoryId(subId);
         User user = currentUserService.adminAndChef(principal);
         MenuItem menuItem = new MenuItem();
         checkName(saveMenuRequest.name());
@@ -60,6 +59,9 @@ public class MenuItemServiceImpl implements MenuItemService {
 
         restaurant.addMenuItem(menuItem);
         menuItem.setRestaurant(restaurant);
+        menuItem.setSubCategory(subCategory);
+        subCategory.addMenuItem(menuItem);
+
         menuItemRepo.save(menuItem);
 
         return SimpleResponse.builder()
@@ -147,6 +149,10 @@ public class MenuItemServiceImpl implements MenuItemService {
         currentUserService.checkForbidden(adminRestaurant, userRestaurant);
 
         MenuItem menu = menuItemRepo.getMenuById(menuId);
+        List<Cheque> cheques = menu.getCheques();
+        for (Cheque cheque : cheques) {
+            cheque.getMenuItems().remove(menu);
+        }
         menuItemRepo.delete(menu);
 
         return SimpleResponse.builder()
@@ -162,7 +168,7 @@ public class MenuItemServiceImpl implements MenuItemService {
         User user = currentUserService.adminAndChefAndWaiter(principal);
         Long resId = user.getRestaurant().getId();
 
-        Page<MenuItem> menuItemPage = menuItemRepo.findMenuById(keyword, resId, pageable);
+        Page<MenuItem> menuItemPage = menuItemRepo.findMenuById("%"+keyword+"%", resId, pageable);
 
         if (menuItemPage.isEmpty()) throw new BedRequestException("Menu Items not found");
 

@@ -10,9 +10,9 @@ import java.util.List;
 public record ChequeResponses(
         String fullName,
         List<MenuItemsResponseForCheque> responses,
-        BigDecimal priceAvg,
+        String priceAvg,
         String service,
-        BigDecimal totalSum,
+        String totalSum,
         LocalDate createdAt
 ) {
 }

@@ -9,10 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import restaurant.dto.request.CatSaveRequest;
 import restaurant.dto.response.*;
-import restaurant.entities.Category;
-import restaurant.entities.Restaurant;
-import restaurant.entities.SubCategory;
-import restaurant.entities.User;
+import restaurant.entities.*;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.NotFoundException;
 import restaurant.repository.CategoryRepository;
@@ -113,6 +110,13 @@ public class CategoryServiceImpl implements CategoryService {
         currentUserService.checkForbidden(adminRestaurant, userRestaurant);
 
         Category category = categoryRepo.getCatById(catId);
+        for (SubCategory subCategory : category.getSubCategories()) {
+            for (MenuItem menuItem : subCategory.getMenuItems()) {
+                for (Cheque cheque : menuItem.getCheques()) {
+                    cheque.getMenuItems().remove(menuItem);
+                }
+            }
+        }
         categoryRepo.delete(category);
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)

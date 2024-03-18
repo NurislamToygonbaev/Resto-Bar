@@ -1,11 +1,13 @@
 package restaurant.services.impl;
 
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import restaurant.dto.request.ChequeSaveRequest;
 import restaurant.dto.request.ChequeUpdateRequest;
 import restaurant.dto.response.*;
@@ -21,8 +23,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.Principal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,8 +72,9 @@ public class ChequeServiceImpl implements ChequeService {
                 ))
                 .collect(Collectors.toList());
         return new ChequeResponses(
-                user.getFirstName() + " " + user.getLastName(), collected, totalPrice,
-                service + " %", grandTotalPrice, cheque.getCreatedAt()
+                user.getFirstName() + " " + user.getLastName(), collected,
+                String.valueOf(totalPrice) +" som",
+                service + " %", String.valueOf(grandTotalPrice)+" som", cheque.getCreatedAt()
         );
     }
 
@@ -102,9 +103,9 @@ public class ChequeServiceImpl implements ChequeService {
         return ChequeResponses.builder()
                 .fullName(user.getFirstName() + " " + user.getLastName())
                 .responses(forCheques)
-                .priceAvg(price)
+                .priceAvg(String.valueOf(price) + " som")
                 .service(String.valueOf(userRestaurant.getService() + " %"))
-                .totalSum(grandTotalPrice)
+                .totalSum(String.valueOf(grandTotalPrice) +" som")
                 .createdAt(cheque.getCreatedAt())
                 .build();
     }
@@ -152,13 +153,17 @@ public class ChequeServiceImpl implements ChequeService {
 
         for (MenuItem menuItem : menuItems) {
             if (menuItem.getQuantity() <= 0) {
-                StopList stopList = new StopList();
-                stopList.setReason("There are no more Menu with name: " + menuItem.getName());
-                stopList.setDate(LocalDate.now());
-                stopList.setMenuItem(menuItem);
-                menuItem.setStopList(stopList);
-                stopListRepo.save(stopList);
-                throw new BedRequestException("Menu with name: " + menuItem.getName() + " in stop list");
+                if (menuItem.getStopList() != null){
+                    throw new BedRequestException("Menu in stop list");
+                }else {
+                    StopList stopList = new StopList();
+                    stopList.setReason("There are no more Menu with name: " + menuItem.getName());
+                    stopList.setDate(LocalDate.now());
+                    stopList.setMenuItem(menuItem);
+                    menuItem.setStopList(stopList);
+                    stopListRepo.save(stopList);
+                    throw new BedRequestException("Menu with name: " + menuItem.getName() + " in stop list");
+                }
             }
         }
 
@@ -191,9 +196,9 @@ public class ChequeServiceImpl implements ChequeService {
         return ChequeResponses.builder()
                 .fullName(user.getFirstName() + " " + user.getLastName())
                 .responses(forCheques)
-                .priceAvg(summedPrice)
+                .priceAvg(String.valueOf(summedPrice) + " som")
                 .service(String.valueOf(servicePercent) + " %")
-                .totalSum(grandTotalPrice)
+                .totalSum(String.valueOf(grandTotalPrice) + " som")
                 .createdAt(cheque.getCreatedAt())
                 .build();
     }

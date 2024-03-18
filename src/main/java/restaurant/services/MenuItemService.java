@@ -9,7 +9,7 @@ import restaurant.dto.response.SimpleResponse;
 import java.security.Principal;
 
 public interface MenuItemService {
-    SimpleResponse save(Principal principal, SaveMenuRequest saveMenuRequest);
+    SimpleResponse save(Long subId,  Principal principal, SaveMenuRequest saveMenuRequest);
 
     MenuItemsResponse findById(Long menuId, Principal principal);
 

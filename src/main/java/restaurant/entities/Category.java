@@ -24,6 +24,9 @@ public class Category {
     @OneToMany(cascade = {REMOVE}, mappedBy = "category")
     private List<SubCategory> subCategories;
 
+    @ManyToOne(cascade = {DETACH})
+    private Restaurant restaurant;
+
     public void addSubCategory(SubCategory subCategory){
         if (this.subCategories == null) this.subCategories = new ArrayList<>();
         this.subCategories.add(subCategory);

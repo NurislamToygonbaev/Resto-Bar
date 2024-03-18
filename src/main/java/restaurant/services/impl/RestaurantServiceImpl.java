@@ -19,6 +19,7 @@ import restaurant.entities.enums.Role;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.BedRequestException;
 import restaurant.exceptions.NotFoundException;
+import restaurant.repository.ChequeRepository;
 import restaurant.repository.JobAppRepository;
 import restaurant.repository.RestaurantRepository;
 import restaurant.repository.UserRepository;
@@ -36,6 +37,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     private final PasswordEncoder passwordEncoder;
     private final JobAppRepository jobAppRepo;
     private final CurrentUserService currentUserService;
+    private final ChequeRepository chequeRepo;
 
     private void checkName(String name){
         boolean exists = restaurantRepo.existsByName(name);
@@ -193,6 +195,9 @@ public class RestaurantServiceImpl implements RestaurantService {
     public SimpleResponse delete(Long resId, Principal principal) {
         currentUserService.devops(principal);
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
+        for (User user : restaurant.getUsers()) {
+            chequeRepo.deleteAll(user.getCheques());
+        }
         restaurantRepo.delete(restaurant);
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)
