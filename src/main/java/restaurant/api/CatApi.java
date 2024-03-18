@@ -27,10 +27,10 @@ public class CatApi {
     }
 
     @Secured({"ADMIN", "CHEF"})
-    @PostMapping
+    @PostMapping("/{resId}")
     public SimpleResponse saveCat(@RequestBody @Valid CatSaveRequest catSaveRequest,
-                                  Principal principal) {
-        return categoryService.saveCat(catSaveRequest, principal);
+                                  Principal principal, @PathVariable Long resId) {
+        return categoryService.saveCat(catSaveRequest, principal, resId);
     }
 
     @Secured({"ADMIN", "CHEF", "WAITER"})

@@ -10,7 +10,7 @@ import java.security.Principal;
 import java.util.List;
 
 public interface CategoryService {
-    SimpleResponse saveCat(CatSaveRequest catSaveRequest, Principal principal);
+    SimpleResponse saveCat(CatSaveRequest catSaveRequest, Principal principal, Long resId);
 
     CatResponse findById(Long catId, Principal principal);
 

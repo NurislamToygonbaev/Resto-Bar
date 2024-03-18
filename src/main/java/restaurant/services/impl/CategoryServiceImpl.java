@@ -36,17 +36,20 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public SimpleResponse saveCat(CatSaveRequest catSaveRequest, Principal principal) {
+    public SimpleResponse saveCat(CatSaveRequest catSaveRequest, Principal principal, Long resId) {
         checkName(catSaveRequest.name());
-        currentUserService.adminAndChef(principal);
-        Category save = categoryRepo.save(
-                Category.builder()
-                        .name(catSaveRequest.name())
-                        .build()
-        );
+        User user = currentUserService.adminAndChef(principal);
+        Restaurant adminRestaurant = user.getRestaurant();
+        Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
+        currentUserService.checkForbidden(adminRestaurant, restaurant);
+        Category category = new Category();
+        category.setName(catSaveRequest.name());
+        restaurant.addCategories(category);
+        category.setRestaurant(restaurant);
+        categoryRepo.save(category);
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)
-                .message("Category saved with name: " + save.getName())
+                .message("Category saved with name: " + category.getName())
                 .build();
     }
 
