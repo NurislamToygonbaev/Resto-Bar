@@ -22,8 +22,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
                 new NotFoundException("Category with id: "+catId+" not found"));
     }
 
-    @Query("select c from Category c join c.subCategories s join s.menuItems m " +
-            " where m.restaurant.id =:resId")
+    @Query("select c from Category c where c.restaurant.id=:resId")
     List<Category> findAllCategories(Long resId);
 
     default Page<Category> findAllCategories(Long resId, Pageable pageable){
