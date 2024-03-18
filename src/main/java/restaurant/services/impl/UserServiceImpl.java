@@ -42,21 +42,21 @@ public class UserServiceImpl implements UserService {
     private final JobAppRepository jobAppRepo;
     private final CurrentUserService currentUserService;
 
-//    @PostConstruct
-//    void saveDeveloper() {
-//        userRepo.save(
-//                User.builder()
-//                        .firstName("Muhammed")
-//                        .lastName("Toichubai uulu")
-//                        .phoneNumber("+996700700700")
-//                        .dateOfBirth(LocalDate.of(1900, 1, 1))
-//                        .experience(100)
-//                        .email("devops@gmail.com")
-//                        .password(passwordEncoder.encode("developer"))
-//                        .role(Role.DEVELOPER)
-//                        .build()
-//        );
-//    }
+    @PostConstruct
+    void saveDeveloper() {
+        userRepo.save(
+                User.builder()
+                        .firstName("Muhammed")
+                        .lastName("Toichubai uulu")
+                        .phoneNumber("+996700700700")
+                        .dateOfBirth(LocalDate.of(1900, 1, 1))
+                        .experience(100)
+                        .email("devops@gmail.com")
+                        .password(passwordEncoder.encode("developer"))
+                        .role(Role.DEVELOPER)
+                        .build()
+        );
+    }
 
     private void checkEmail(String email) {
         boolean exists = userRepo.existsByEmail(email);
