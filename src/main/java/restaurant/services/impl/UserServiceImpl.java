@@ -20,6 +20,7 @@ import restaurant.entities.User;
 import restaurant.entities.enums.Role;
 import restaurant.exceptions.AlreadyExistsException;
 import restaurant.exceptions.BedRequestException;
+import restaurant.exceptions.ForbiddenException;
 import restaurant.exceptions.NotFoundException;
 import restaurant.repository.JobAppRepository;
 import restaurant.repository.RestaurantRepository;
@@ -41,21 +42,21 @@ public class UserServiceImpl implements UserService {
     private final JobAppRepository jobAppRepo;
     private final CurrentUserService currentUserService;
 
-    @PostConstruct
-    void saveDeveloper() {
-        userRepo.save(
-                User.builder()
-                        .firstName("Muhammed")
-                        .lastName("Toichubai uulu")
-                        .phoneNumber("+996700700700")
-                        .dateOfBirth(LocalDate.of(1900, 1, 1))
-                        .experience(100)
-                        .email("devops@gmail.com")
-                        .password(passwordEncoder.encode("developer"))
-                        .role(Role.DEVELOPER)
-                        .build()
-        );
-    }
+//    @PostConstruct
+//    void saveDeveloper() {
+//        userRepo.save(
+//                User.builder()
+//                        .firstName("Muhammed")
+//                        .lastName("Toichubai uulu")
+//                        .phoneNumber("+996700700700")
+//                        .dateOfBirth(LocalDate.of(1900, 1, 1))
+//                        .experience(100)
+//                        .email("devops@gmail.com")
+//                        .password(passwordEncoder.encode("developer"))
+//                        .role(Role.DEVELOPER)
+//                        .build()
+//        );
+//    }
 
     private void checkEmail(String email) {
         boolean exists = userRepo.existsByEmail(email);
@@ -108,6 +109,9 @@ public class UserServiceImpl implements UserService {
         if (restaurant.getNumberOfEmployees() > 15){
             throw new NotFoundException("There are no vacancies");
         }
+        if (signUpRequest.role().equals(Role.ADMIN) || signUpRequest.role().equals(Role.DEVELOPER)){
+            throw new ForbiddenException("Forbidden 403");
+        }
         JobApp saveApps = jobAppRepo.save(
                 JobApp.builder()
                         .firstName(signUpRequest.firstName())
@@ -136,8 +140,7 @@ public class UserServiceImpl implements UserService {
         checkEmail(signUpRequest.email());
         checkAge(signUpRequest);
 
-        Long resId = currentUser.getRestaurant().getId();
-        Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
+        Restaurant restaurant = currentUser.getRestaurant();
 
         User user = new User();
         user.setFirstName(signUpRequest.firstName());
@@ -280,7 +283,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public AllUsersResponse findEmployee(Long userId, Principal principal) {
-        User currentUser = currentUserService.adminUser(principal);
+        User currentUser = currentUserService.adminAndChefAndWaiter(principal);
         User user = userRepo.getUserById(userId);
         Restaurant adminRestaurant = currentUser.getRestaurant();
         currentUserService.checkForbidden(adminRestaurant, user.getRestaurant());

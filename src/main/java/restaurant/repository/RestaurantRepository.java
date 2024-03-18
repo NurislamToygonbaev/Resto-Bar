@@ -16,10 +16,10 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
                 new NotFoundException("Restaurant with id: "+resId+" not found"));
     }
 
-    @Query("select r from Restaurant r join r.menuItems m where m.subCategory.id =:subId")
+    @Query("select r from Restaurant r join r.categories c join c.subCategories s where s.id =:subId")
     Restaurant getRestaurantBySubId(Long subId);
 
-    @Query("select r from Restaurant r join r.menuItems m where m.subCategory.category.id = :catId")
+    @Query("select r from Restaurant r join r.categories c where c.id= :catId")
     Restaurant getRestaurantByCatId(Long catId);
 
     @Query("select r from Restaurant r join r.jobApps j where j.id =:jobId")

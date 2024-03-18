@@ -20,17 +20,16 @@ public class CatApi {
 
     @Secured({"ADMIN", "CHEF", "WAITER"})
     @GetMapping
-    public CategoryPagination findAll(@RequestParam int page,
-                                      @RequestParam int size,
+    public CategoryPagination findAll(@RequestParam int page, @RequestParam int size,
                                       Principal principal) {
         return categoryService.findAll(page, size, principal);
     }
 
     @Secured({"ADMIN", "CHEF"})
-    @PostMapping("/{resId}")
+    @PostMapping
     public SimpleResponse saveCat(@RequestBody @Valid CatSaveRequest catSaveRequest,
-                                  Principal principal, @PathVariable Long resId) {
-        return categoryService.saveCat(catSaveRequest, principal, resId);
+                                  Principal principal) {
+        return categoryService.saveCat(catSaveRequest, principal);
     }
 
     @Secured({"ADMIN", "CHEF", "WAITER"})

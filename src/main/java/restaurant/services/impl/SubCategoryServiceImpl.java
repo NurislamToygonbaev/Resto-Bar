@@ -68,9 +68,7 @@ public class SubCategoryServiceImpl implements SubCategoryService {
         categoryRepo.getCatById(catId);
         Restaurant adminRestaurant = user.getRestaurant();
         Restaurant restaurant = restaurantRepo.getRestaurantByCatId(catId);
-        if (restaurant != null){
-            currentUserService.checkForbidden(adminRestaurant, restaurant);
-        }
+        currentUserService.checkForbidden(adminRestaurant, restaurant);
 
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<SubCategory> subCategories = subCategoryRepo.findSubCategoriesById(catId, pageable);
@@ -98,9 +96,8 @@ public class SubCategoryServiceImpl implements SubCategoryService {
         Restaurant adminRestaurant = user.getRestaurant();
         checkSubId(subId);
         Restaurant restaurant = restaurantRepo.getRestaurantBySubId(subId);
-        if (restaurant != null){
-            currentUserService.checkForbidden(adminRestaurant, restaurant);
-        }
+        currentUserService.checkForbidden(adminRestaurant, restaurant);
+
         SubCategory subCategory = subCategoryRepo.getSubCategoryId(subId);
         List<MenuItemsResponse> collect = subCategory.getMenuItems().stream()
                 .map(this::convertToMenu)
@@ -120,13 +117,13 @@ public class SubCategoryServiceImpl implements SubCategoryService {
         checkName(catSaveRequest.name());
         Restaurant adminRestaurant = user.getRestaurant();
         Restaurant restaurant = restaurantRepo.getRestaurantBySubId(subId);
-        if (restaurant != null){
-            currentUserService.checkForbidden(adminRestaurant, restaurant);
-        }
+        currentUserService.checkForbidden(adminRestaurant, restaurant);
 
         SubCategory subCategory = subCategoryRepo.getSubCategoryId(subId);
 
         subCategory.setName(catSaveRequest.name());
+        subCategoryRepo.save(subCategory);
+
         return SimpleResponse.builder()
                 .httpStatus(HttpStatus.OK)
                 .message("Sub category successfully updated")
@@ -140,9 +137,7 @@ public class SubCategoryServiceImpl implements SubCategoryService {
         Restaurant adminRestaurant = user.getRestaurant();
         SubCategory subCategory = subCategoryRepo.getSubCategoryId(subId);
         Restaurant restaurant = restaurantRepo.getRestaurantBySubId(subId);
-        if (restaurant != null){
-            currentUserService.checkForbidden(adminRestaurant, restaurant);
-        }
+        currentUserService.checkForbidden(adminRestaurant, restaurant);
 
         subCategoryRepo.delete(subCategory);
         return SimpleResponse.builder()

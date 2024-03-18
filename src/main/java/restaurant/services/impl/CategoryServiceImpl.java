@@ -36,12 +36,10 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public SimpleResponse saveCat(CatSaveRequest catSaveRequest, Principal principal, Long resId) {
+    public SimpleResponse saveCat(CatSaveRequest catSaveRequest, Principal principal) {
         checkName(catSaveRequest.name());
         User user = currentUserService.adminAndChef(principal);
-        Restaurant adminRestaurant = user.getRestaurant();
-        Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
-        currentUserService.checkForbidden(adminRestaurant, restaurant);
+        Restaurant restaurant = user.getRestaurant();
         Category category = new Category();
         category.setName(catSaveRequest.name());
         restaurant.addCategories(category);

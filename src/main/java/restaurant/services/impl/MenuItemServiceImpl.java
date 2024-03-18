@@ -46,6 +46,8 @@ public class MenuItemServiceImpl implements MenuItemService {
     public SimpleResponse save(Long subId, Principal principal, SaveMenuRequest saveMenuRequest) {
         SubCategory subCategory = subCategoryRepo.getSubCategoryId(subId);
         User user = currentUserService.adminAndChef(principal);
+        Restaurant userRestaurant = restaurantRepo.getRestaurantBySubId(subCategory.getId());
+        currentUserService.checkForbidden(user.getRestaurant(), userRestaurant);
         MenuItem menuItem = new MenuItem();
         checkName(saveMenuRequest.name());
         Restaurant restaurant = user.getRestaurant();

@@ -173,7 +173,7 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     public SimpleResponse editRestaurant(EditRestaurantRequest request, Principal principal) {
-        User user = currentUserService.adminAndChef(principal);
+        User user = currentUserService.adminUser(principal);
         checkName(request.name());
 
         Long restId = user.getRestaurant().getId();

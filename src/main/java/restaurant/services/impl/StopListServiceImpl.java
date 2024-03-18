@@ -49,7 +49,6 @@ public class StopListServiceImpl implements StopListService {
     public StopListResponse findById(Long stopId, Principal principal) {
         User user = currentUserService.adminAndChefAndWaiter(principal);
         Restaurant adminRestaurant = user.getRestaurant();
-
         StopList list = stopListRepo.getStopListById(stopId);
         Restaurant userRestaurant = list.getMenuItem().getRestaurant();
 

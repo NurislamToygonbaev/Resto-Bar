@@ -71,7 +71,7 @@ public class UserApi {
         return userService.updateEmployees(userId, signUpRequest, principal);
     }
 
-    @Secured("ADMIN")
+    @Secured({"ADMIN", "CHEF", "WAITER"})
     @GetMapping("/findEmployee/{userId}")
     public AllUsersResponse findEmployee(@PathVariable Long userId,
                                          Principal principal){

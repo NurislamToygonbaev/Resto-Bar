@@ -31,6 +31,6 @@ public interface SubCategoryRepository extends JpaRepository<SubCategory, Long> 
                 new NotFoundException("Sub category with id: "+subId+" not found"));
     }
 
-    @Query("select s from SubCategory s join s.menuItems m where m.restaurant.id =:resId")
+    @Query("select s from SubCategory s where s.category.restaurant.id=:resId")
     List<SubCategory> findAllSubCatById(Long resId);
 }

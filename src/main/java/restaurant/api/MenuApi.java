@@ -44,8 +44,7 @@ public class MenuApi {
     @Secured({"ADMIN", "CHEF"})
     @PutMapping("/{menuId}")
     public SimpleResponse updateMenu(@RequestBody @Valid SaveMenuRequest saveMenuRequest,
-                                     Principal principal,
-                                     @PathVariable Long menuId){
+                                     Principal principal, @PathVariable Long menuId){
         return menuItemService.updateMenu(menuId, saveMenuRequest, principal);
     }
     @Secured({"ADMIN", "CHEF"})
