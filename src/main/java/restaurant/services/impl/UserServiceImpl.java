@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
     private final JobAppRepository jobAppRepo;
     private final CurrentUserService currentUserService;
 
-//    @PostConstruct
+    @PostConstruct
     void saveDeveloper() {
         userRepo.save(
                 User.builder()

@@ -5,7 +5,7 @@ import lombok.Builder;
 
 @Builder
 public record CatSaveRequest(
-        @NotBlank
+        @NotBlank(message = "the name must be unique")
         String name
 ) {
 }

@@ -7,14 +7,14 @@ import restaurant.validation.experience.ExperienceValidation;
 import java.math.BigDecimal;
 
 public record SaveMenuRequest(
-        @NotBlank
+        @NotBlank(message = "the name must be unique")
         String name,
-        @NotBlank
+        @NotBlank(message = "the image should not be empty")
         String image,
         @ExperienceValidation
         @NotNull
         Integer price,
-        @NotBlank
+        @NotBlank(message = "the description should not be empty")
         String description,
         boolean isVegetarian,
         @ExperienceValidation

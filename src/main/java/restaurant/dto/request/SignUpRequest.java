@@ -18,9 +18,9 @@ import java.time.LocalDate;
 
 @Builder
 public record SignUpRequest(
-        @NotBlank
+        @NotBlank(message = "the last name should not be empty")
         String lastName,
-        @NotBlank
+        @NotBlank(message = "the first name should not be empty")
         String firstName,
         @DateOfBirthValidation
         LocalDate dateOfBirth,

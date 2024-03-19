@@ -17,17 +17,17 @@ import java.time.LocalDate;
 
 @Builder
 public record SaveRestaurantRequest(
-        @NotBlank
+        @NotBlank(message = "the name must be unique")
         String name,
-        @NotBlank
+        @NotBlank(message = "the location should not be empty")
         String location,
         @Enumerated(EnumType.STRING)
         RestType restType,
         @ExperienceValidation
         int service,
-        @NotBlank
+        @NotBlank(message = "the last name should not be empty")
         String lastName,
-        @NotBlank
+        @NotBlank(message = "the first name should not be empty")
         String firstName,
         @DateOfBirthValidation
         LocalDate dateOfBirth,
