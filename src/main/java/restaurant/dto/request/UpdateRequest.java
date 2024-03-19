@@ -2,6 +2,7 @@ package restaurant.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import restaurant.validation.dateOfBirth.DateOfBirthValidation;
 import restaurant.validation.email.EmailValidation;
 import restaurant.validation.experience.ExperienceValidation;
@@ -11,9 +12,7 @@ import restaurant.validation.phoneNumber.PhoneNumberValidation;
 import java.time.LocalDate;
 
 public record UpdateRequest(
-        @NotBlank
         String lastName,
-        @NotBlank
         String firstName,
         @DateOfBirthValidation
         LocalDate dateOfBirth,
@@ -24,6 +23,7 @@ public record UpdateRequest(
         @PhoneNumberValidation
         String phoneNumber,
         @ExperienceValidation
-        int experience
+        @NotNull
+        Integer experience
 ) {
 }

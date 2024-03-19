@@ -32,7 +32,7 @@ public class User implements UserDetails {
     private Role role;
     private int experience;
 
-    @OneToMany(cascade = {CascadeType.DETACH}, mappedBy = "user")
+    @OneToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE}, mappedBy = "user")
     private List<Cheque> cheques;
 
     @ManyToOne(cascade = {CascadeType.DETACH})

@@ -1,6 +1,7 @@
 package restaurant.dto.response;
 
 import lombok.Builder;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -8,8 +9,10 @@ import java.math.BigDecimal;
 public record MenuItemsResponseForCheque(
         String name,
         String image,
-        BigDecimal price,
+        String price,
         String description,
         boolean isVegetarian
 ) {
+
+
 }

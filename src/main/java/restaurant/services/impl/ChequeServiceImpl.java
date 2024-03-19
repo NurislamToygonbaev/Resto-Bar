@@ -1,7 +1,6 @@
 package restaurant.services.impl;
 
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,7 +12,6 @@ import restaurant.dto.request.ChequeUpdateRequest;
 import restaurant.dto.response.*;
 import restaurant.entities.*;
 import restaurant.exceptions.BedRequestException;
-import restaurant.exceptions.NotFoundException;
 import restaurant.repository.ChequeRepository;
 import restaurant.repository.MenuItemRepository;
 import restaurant.repository.StopListRepository;
@@ -43,14 +41,12 @@ public class ChequeServiceImpl implements ChequeService {
 
         Page<Cheque> cheques = chequeRepo.getAllChequesByResId(resId, pageable);
 
-        if (cheques.isEmpty()) throw new NotFoundException("Cheques not found");
-
         List<ChequeResponses> collected = cheques.getContent().stream()
                 .map(this::convertToCheque)
                 .collect(Collectors.toList());
         return ChequePagination.builder()
                 .page(cheques.getNumber() + 1)
-                .size(cheques.getTotalPages())
+                .size(cheques.getNumberOfElements())
                 .responses(collected)
                 .build();
     }
@@ -67,7 +63,7 @@ public class ChequeServiceImpl implements ChequeService {
 
         List<MenuItemsResponseForCheque> collected = cheque.getMenuItems().stream()
                 .map(menuItem -> new MenuItemsResponseForCheque(menuItem.getName(),
-                        menuItem.getImage(), menuItem.getPrice(),
+                        menuItem.getImage(), String.valueOf(menuItem.getPrice())+" som",
                         menuItem.getDescription(), menuItem.isVegetarian()
                 ))
                 .collect(Collectors.toList());
@@ -76,12 +72,6 @@ public class ChequeServiceImpl implements ChequeService {
                 String.valueOf(totalPrice) +" som",
                 service + " %", String.valueOf(grandTotalPrice)+" som", cheque.getCreatedAt()
         );
-    }
-
-    private BigDecimal sumPrice(List<MenuItem> menuItems) {
-        return menuItems.stream()
-                .map(MenuItem::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
@@ -118,7 +108,7 @@ public class ChequeServiceImpl implements ChequeService {
         Restaurant userRestaurant = cheque.getUser().getRestaurant();
         currentUserService.checkForbidden(adminRestaurant, userRestaurant);
 
-        cheque.setPriceAvg(request.priceAvg());
+        cheque.setPriceAvg(BigDecimal.valueOf(request.priceAvg()));
         chequeRepo.save(cheque);
 
         return SimpleResponse.builder()
@@ -149,58 +139,69 @@ public class ChequeServiceImpl implements ChequeService {
         Restaurant restaurant = user.getRestaurant();
         List<Long> menuIds = request.menuIds();
 
-        List<MenuItem> menuItems = menuItemRepo.getMenuItemsByIds(menuIds);
-
-        for (MenuItem menuItem : menuItems) {
-            if (menuItem.getQuantity() <= 0) {
-                if (menuItem.getStopList() != null){
-                    throw new BedRequestException("Menu in stop list");
-                }else {
-                    StopList stopList = new StopList();
-                    stopList.setReason("There are no more Menu with name: " + menuItem.getName());
-                    stopList.setDate(LocalDate.now());
-                    stopList.setMenuItem(menuItem);
-                    menuItem.setStopList(stopList);
-                    stopListRepo.save(stopList);
-                    throw new BedRequestException("Menu with name: " + menuItem.getName() + " in stop list");
-                }
-            }
-        }
-
         Cheque cheque = new Cheque();
         cheque.setCreatedAt(LocalDate.now());
+        BigDecimal summedPrice = BigDecimal.ZERO;
 
-        BigDecimal summedPrice = sumPrice(menuItems);
+        for (Long menuId : menuIds) {
+            MenuItem menuItem = menuItemRepo.getMenuById(menuId);
+
+            if (menuItem.getStopList() != null){
+                throw new BedRequestException("menu in the stop list");
+            }
+            if (menuItem.getQuantity() == 0) {
+                StopList stopList = new StopList();
+                stopList.setReason("There are no more");
+                stopList.setDate(LocalDate.now());
+                stopList.setMenuItem(menuItem);
+                menuItem.setStopList(stopList);
+                stopListRepo.save(stopList);
+                throw new BedRequestException("Menu item is not available: " + menuItem.getName());
+            }
+
+            BigDecimal price = menuItem.getPrice();
+            summedPrice = summedPrice.add(price);
+
+            menuItem.setQuantity(menuItem.getQuantity() - 1);
+            menuItem.addCheque(cheque);
+            cheque.addMenuItem(menuItem);
+
+        }
+
+        chequeRepo.save(cheque);
+        cheque.setUser(user);
+        user.addCheque(cheque);
+        menuItemRepo.saveAll(menuIds.stream()
+                .map(menuItemRepo::getMenuById)
+                .collect(Collectors.toList()));
+
         int servicePercent = restaurant.getService();
         BigDecimal serviceAmount = summedPrice.multiply(BigDecimal.valueOf(servicePercent / 100.0));
         BigDecimal grandTotalPrice = summedPrice.add(serviceAmount);
-
-        cheque.setPriceAvg(summedPrice);
-
-        for (MenuItem menuItem : menuItems) {
-            if (menuItem.getQuantity() > 0){
-                menuItem.setQuantity(menuItem.getQuantity() - 1);
-                menuItem.addCheque(cheque);
-                cheque.addMenuItem(menuItem);
-            }
-        }
-
-        menuItemRepo.saveAll(menuItems);
-
-        cheque.setUser(user);
-        user.addCheque(cheque);
-
-        chequeRepo.save(cheque);
-
-        List<MenuItemsResponseForCheque> forCheques = menuItemRepo.getConvertToItems(menuIds);
         return ChequeResponses.builder()
                 .fullName(user.getFirstName() + " " + user.getLastName())
-                .responses(forCheques)
+                .responses(convertChequeItemsToResponse(cheque.getMenuItems()))
                 .priceAvg(String.valueOf(summedPrice) + " som")
                 .service(String.valueOf(servicePercent) + " %")
                 .totalSum(String.valueOf(grandTotalPrice) + " som")
                 .createdAt(cheque.getCreatedAt())
                 .build();
+    }
+    private List<MenuItemsResponseForCheque> convertChequeItemsToResponse(List<MenuItem> menuItems) {
+        List<MenuItemsResponseForCheque> responses = new ArrayList<>();
+        for (MenuItem menuItem : menuItems) {
+            MenuItemsResponseForCheque menuRes = new MenuItemsResponseForCheque(
+                    menuItem.getName(), menuItem.getImage(), String.valueOf(menuItem.getPrice())+" som",
+                    menuItem.getDescription(), menuItem.isVegetarian()
+            );
+            responses.add(menuRes);
+        }
+        return responses;
+    }
+    private BigDecimal sumPrice(List<MenuItem> menuItems) {
+        return menuItems.stream()
+                .map(MenuItem::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
@@ -208,6 +209,10 @@ public class ChequeServiceImpl implements ChequeService {
         User user = currentUserService.adminAndWaiter(principal);
         List<Cheque> cheques = user.getCheques();
         BigDecimal totalSum = BigDecimal.ZERO;
+        LocalDate now = LocalDate.now();
+        if (date.isAfter(now)){
+            throw new BedRequestException("cannot be in the future");
+        }
 
         for (Cheque cheque : cheques) {
             LocalDate createdAt = cheque.getCreatedAt();
@@ -223,6 +228,10 @@ public class ChequeServiceImpl implements ChequeService {
         User user = currentUserService.adminUser(principal);
         Restaurant restaurant = user.getRestaurant();
         List<MenuItem> menuItems = restaurant.getMenuItems();
+        LocalDate now = LocalDate.now();
+        if (date.isAfter(now)){
+            throw new BedRequestException("cannot be in the future");
+        }
 
         List<Cheque> cheques = new ArrayList<>();
         for (MenuItem menuItem : menuItems) {

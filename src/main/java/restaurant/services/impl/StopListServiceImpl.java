@@ -40,7 +40,7 @@ public class StopListServiceImpl implements StopListService {
 
         return StopListPagination.builder()
                 .page(stopLists.getNumber() + 1)
-                .size(stopLists.getTotalPages())
+                .size(stopLists.getNumberOfElements())
                 .responses(collected)
                 .build();
     }

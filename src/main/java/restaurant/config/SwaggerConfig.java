@@ -20,7 +20,7 @@ public class SwaggerConfig {
         return  new OpenAPI()
                 .components(new Components()
                         .addSecuritySchemes(API_KEY, apiKeySecurityScheme()))
-                .info(new Info().title("ONLINE SHOP").description("Java 12"))
+                .info(new Info().title("RESTAURANT").description("Java 12"))
 
                 .security(Collections.singletonList(new SecurityRequirement().addList(API_KEY)));
 

@@ -1,6 +1,7 @@
 package restaurant.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import restaurant.validation.experience.ExperienceValidation;
 
 import java.math.BigDecimal;
@@ -10,11 +11,13 @@ public record SaveMenuRequest(
         String name,
         @NotBlank
         String image,
-        BigDecimal price,
+        @ExperienceValidation
+        @NotNull
+        Integer price,
         @NotBlank
         String description,
         boolean isVegetarian,
         @ExperienceValidation
-        int quantity
+        Integer quantity
 ) {
 }

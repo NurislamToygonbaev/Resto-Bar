@@ -195,6 +195,9 @@ public class RestaurantServiceImpl implements RestaurantService {
     public SimpleResponse delete(Long resId, Principal principal) {
         currentUserService.devops(principal);
         Restaurant restaurant = restaurantRepo.getRestaurantById(resId);
+        for (MenuItem menuItem : restaurant.getMenuItems()) {
+            chequeRepo.deleteAll(menuItem.getCheques());
+        }
         for (User user : restaurant.getUsers()) {
             chequeRepo.deleteAll(user.getCheques());
         }
@@ -241,7 +244,7 @@ public class RestaurantServiceImpl implements RestaurantService {
 
         return RestPagResponse.builder()
                 .page(repoAll.getNumber() + 1)
-                .size(repoAll.getTotalPages())
+                .size(repoAll.getNumberOfElements())
                 .responses(aLlRestResponses)
                 .build();
     }

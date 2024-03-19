@@ -85,7 +85,7 @@ public class SubCategoryServiceImpl implements SubCategoryService {
         collect.sort(nameComparator);
         return SubCategoriesPagination.builder()
                 .page(subCategories.getNumber() + 1)
-                .size(subCategories.getTotalPages())
+                .size(subCategories.getNumberOfElements())
                 .responses(collect)
                 .build();
     }

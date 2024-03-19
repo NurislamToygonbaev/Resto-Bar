@@ -1,18 +1,19 @@
 package restaurant.dto.request;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import restaurant.entities.enums.RestType;
+import restaurant.validation.experience.ExperienceValidation;
 
 public record EditRestaurantRequest(
-        @NotBlank
         String name,
-        @NotBlank
         String location,
-        @Enumerated(EnumType.STRING)
         RestType restType,
-        @NotBlank
-        int service
+        @ExperienceValidation
+        @NotNull
+        Integer service
 ) {
 }

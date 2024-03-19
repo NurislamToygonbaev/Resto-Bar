@@ -25,7 +25,7 @@ public class Cheque {
     private LocalDate createdAt;
 
     @ManyToMany(cascade = {DETACH, MERGE})
-    private List<MenuItem> menuItems;
+    private List<MenuItem> menuItems = new ArrayList<>();
 
     @ManyToOne(cascade = {DETACH})
     private User user;

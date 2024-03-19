@@ -14,6 +14,7 @@ import restaurant.dto.request.SignInRequest;
 import restaurant.dto.request.SignUpRequest;
 import restaurant.dto.request.UpdateRequest;
 import restaurant.dto.response.*;
+import restaurant.entities.Cheque;
 import restaurant.entities.JobApp;
 import restaurant.entities.Restaurant;
 import restaurant.entities.User;
@@ -42,7 +43,7 @@ public class UserServiceImpl implements UserService {
     private final JobAppRepository jobAppRepo;
     private final CurrentUserService currentUserService;
 
-    @PostConstruct
+//    @PostConstruct
     void saveDeveloper() {
         userRepo.save(
                 User.builder()
@@ -181,7 +182,7 @@ public class UserServiceImpl implements UserService {
         }
         return PaginationUser.builder()
                 .page(users.getNumber() + 1)
-                .size(users.getTotalPages())
+                .size(users.getNumberOfElements())
                 .allUsersResponses(allUsersResponses)
                 .build();
     }
@@ -199,7 +200,7 @@ public class UserServiceImpl implements UserService {
         }
         return PaginationUser.builder()
                 .page(jobApps.getNumber() + 1)
-                .size(jobApps.getTotalPages())
+                .size(jobApps.getNumberOfElements())
                 .allUsersResponses(allUsersResponses)
                 .build();
     }
@@ -306,6 +307,10 @@ public class UserServiceImpl implements UserService {
         Restaurant adminRestaurant = currentUser.getRestaurant();
         User user = userRepo.getUserById(userId);
         currentUserService.checkForbidden(adminRestaurant, user.getRestaurant());
+
+        for (Cheque cheque : user.getCheques()) {
+            cheque.setUser(null);
+        }
 
         userRepo.delete(user);
         return SimpleResponse.builder()

@@ -11,7 +11,6 @@ import restaurant.dto.request.CatSaveRequest;
 import restaurant.dto.response.*;
 import restaurant.entities.*;
 import restaurant.exceptions.AlreadyExistsException;
-import restaurant.exceptions.NotFoundException;
 import restaurant.repository.CategoryRepository;
 import restaurant.repository.RestaurantRepository;
 import restaurant.services.CategoryService;
@@ -133,15 +132,13 @@ public class CategoryServiceImpl implements CategoryService {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<Category> categories = categoryRepo.findAllCategories(resId, pageable);
 
-        if (categories.isEmpty()) throw new NotFoundException("Categories not found");
-
         List<CategoriesResponse> responseList = categories.getContent().stream()
                 .map(this::convertToCategory)
                 .collect(Collectors.toList());
 
         return CategoryPagination.builder()
                 .page(categories.getNumber() + 1)
-                .size(categories.getTotalPages())
+                .size(categories.getNumberOfElements())
                 .responses(responseList)
                 .build();
     }

@@ -22,6 +22,7 @@ import restaurant.repository.StopListRepository;
 import restaurant.repository.SubCategoryRepository;
 import restaurant.services.MenuItemService;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,7 +55,7 @@ public class MenuItemServiceImpl implements MenuItemService {
 
         menuItem.setName(saveMenuRequest.name());
         menuItem.setImage(saveMenuRequest.image());
-        menuItem.setPrice(saveMenuRequest.price());
+        menuItem.setPrice(BigDecimal.valueOf(saveMenuRequest.price()));
         menuItem.setDescription(saveMenuRequest.description());
         menuItem.setVegetarian(saveMenuRequest.isVegetarian());
         menuItem.setQuantity(saveMenuRequest.quantity());
@@ -109,7 +110,7 @@ public class MenuItemServiceImpl implements MenuItemService {
 
         return MenuPagination.builder()
                 .page(menuItems.getNumber() + 1)
-                .size(menuItems.getTotalPages())
+                .size(menuItems.getNumberOfElements())
                 .response(collected)
                 .build();
     }
@@ -126,9 +127,10 @@ public class MenuItemServiceImpl implements MenuItemService {
         menu.setName(saveMenuRequest.name());
         menu.setImage(saveMenuRequest.image());
         menu.setDescription(saveMenuRequest.description());
-        menu.setPrice(saveMenuRequest.price());
+        menu.setPrice(BigDecimal.valueOf(saveMenuRequest.price()));
         menu.setVegetarian(saveMenuRequest.isVegetarian());
-        menu.setQuantity(saveMenuRequest.quantity());
+        int i = menu.getQuantity() + saveMenuRequest.quantity();
+        menu.setQuantity(i);
 
         menuItemRepo.save(menu);
 
@@ -180,7 +182,7 @@ public class MenuItemServiceImpl implements MenuItemService {
 
         return MenuPagination.builder()
                 .page(menuItemPage.getNumber() + 1)
-                .size(menuItemPage.getTotalPages())
+                .size(menuItemPage.getNumberOfElements())
                 .response(collected)
                 .build();
     }
@@ -201,7 +203,7 @@ public class MenuItemServiceImpl implements MenuItemService {
 
         return MenuPagination.builder()
                 .page(menuItemPage.getNumber() + 1)
-                .size(menuItemPage.getTotalPages())
+                .size(menuItemPage.getNumberOfElements())
                 .response(collected)
                 .build();
     }
@@ -213,7 +215,6 @@ public class MenuItemServiceImpl implements MenuItemService {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         Page<MenuItem> menuItemPage = menuItemRepo.filterByVegetarian(trueOrFalse, resId, pageable);
-        if (menuItemPage.isEmpty()) throw new BedRequestException("Menu Items not found");
 
         List<MenuItemsResponse> collected = menuItemPage.getContent().stream()
                 .map(this::convertToMenu)
@@ -221,7 +222,7 @@ public class MenuItemServiceImpl implements MenuItemService {
 
         return MenuPagination.builder()
                 .page(menuItemPage.getNumber() + 1)
-                .size(menuItemPage.getTotalPages())
+                .size(menuItemPage.getNumberOfElements())
                 .response(collected)
                 .build();
     }
@@ -234,7 +235,8 @@ public class MenuItemServiceImpl implements MenuItemService {
         Restaurant userRestaurant = menu.getRestaurant();
         currentUserService.checkForbidden(adminRestaurant, userRestaurant);
 
-        menu.setQuantity(request.quantity());
+        int i = menu.getQuantity() + request.quantity();
+        menu.setQuantity(i);
         menuItemRepo.save(menu);
 
         StopList stopList = menu.getStopList();
